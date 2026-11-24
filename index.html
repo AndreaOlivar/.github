@@ -359,7 +359,6 @@ const routes = {
   "/galeria": viewGallery,
   "/registro": viewRegister,
   "/entrar": viewLogin,
-  "/recuperar": viewForgot,
   "/nueva-clave": viewNewPassword,
   "/cuenta": viewAccount,
   "/pago": viewPayment,
@@ -597,11 +596,9 @@ async function viewRegister() {
     });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
-    if (data.session) { await loadSession(); return go("#/cuenta"); }
-    app.innerHTML = authShell("Revisa tu correo", "Ya casi está.", `
-      <div class="alert alert-ok">Te enviamos un enlace a <b>${esc(d.email)}</b>. Ábrelo para confirmar tu cuenta y después inicia sesión.</div>
-      <p class="small muted" style="margin-top:1rem">¿No llegó? Revisa la carpeta de spam o promociones.</p>
-      <a class="btn btn-ghost btn-block" style="margin-top:1rem" href="#/entrar">Ir a iniciar sesión</a>`);
+    if (data.session) { await loadSession(); toast("¡Cuenta creada!"); return go("#/cuenta"); }
+    // Si en Supabase sigue activa la confirmación por correo, no hay sesión todavía.
+    showError(err, "Tu cuenta se creó, pero el servidor pide confirmación por correo. Intenta iniciar sesión en unos minutos.");
   });
 }
 
@@ -615,10 +612,7 @@ async function viewLogin(params) {
       <div><label class="label" for="password">Contraseña</label><input class="input" id="password" name="password" type="password" required autocomplete="current-password"></div>
       <div id="err"></div>
       <button class="btn btn-primary btn-block" type="submit">Entrar</button>
-      <div class="row" style="justify-content:space-between">
-        <a href="#/recuperar" class="small muted">¿Olvidaste tu contraseña?</a>
-        <a href="#/registro" class="small" style="color:var(--rose-2)">Crear cuenta</a>
-      </div>
+      <p class="center small muted">¿No tienes cuenta? <a href="#/registro" style="color:var(--rose-2)">Crear cuenta</a></p>
     </form>`);
   $("#f").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -632,30 +626,9 @@ async function viewLogin(params) {
   });
 }
 
-async function viewForgot() {
-  app.innerHTML = authShell("Recupera tu contraseña", "Te enviaremos un enlace para crear una nueva.", `
-    <form id="f" class="stack">
-      <div><label class="label" for="email">Correo electrónico</label><input class="input" id="email" name="email" type="email" required autocomplete="email"></div>
-      <div id="err"></div>
-      <button class="btn btn-primary btn-block" type="submit">Enviar enlace</button>
-      <p class="center small"><a href="#/entrar" class="muted">Volver a iniciar sesión</a></p>
-    </form>`);
-  $("#f").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button");
-    const email = new FormData(f).get("email").trim();
-    setBusy(btn, true, "Enviando…");
-    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: BASE_URL });
-    setBusy(btn, false);
-    if (error) return showError(err, authErrorMsg(error));
-    // Mismo mensaje exista o no la cuenta (no revela qué correos están registrados).
-    err.innerHTML = `<div class="alert alert-ok">Si hay una cuenta con ese correo, te llegará un enlace en unos minutos.</div>`;
-  });
-}
-
 async function viewNewPassword() {
   if (!state.user) {
-    app.innerHTML = authShell("Enlace inválido", "El enlace expiró o ya se usó.", `<a class="btn btn-primary btn-block" href="#/recuperar">Pedir otro enlace</a>`);
+    app.innerHTML = authShell("Inicia sesión", "Entra a tu cuenta para cambiar la contraseña.", `<a class="btn btn-primary btn-block" href="#/entrar?next=/nueva-clave">Entrar</a>`);
     return;
   }
   app.innerHTML = authShell("Nueva contraseña", "Escribe tu nueva contraseña.", `
@@ -732,7 +705,6 @@ async function viewAccount(_p, alive) {
             <button class="btn btn-primary" id="pay">Pagar ${mxn(CONFIG.priceMxn)} con Mercado Pago</button>
             <p class="hint">Tarjeta, débito u OXXO. No se renueva automáticamente.</p>`}
           <div id="pay-err" style="margin-top:1rem"></div>
-          ${state.user.email_confirmed_at ? "" : `<div class="alert alert-warn" style="margin-top:1rem">Confirma tu correo para poder pagar.</div>`}
         </div>
 
         <div class="card pad">
