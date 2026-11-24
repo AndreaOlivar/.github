@@ -15,7 +15,7 @@
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
   media-src 'self' blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
-  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co;
+  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net;
   base-uri 'self'; form-action 'self'; object-src 'none'">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -656,7 +656,7 @@ async function startCheckout(btn, errEl) {
   setBusy(btn, true, "Abriendo Mercado Pago…");
   showError(errEl, "");
   try {
-    const { data, error } = await sb.functions.invoke("create-checkout", { method: "POST" });
+    const { data, error } = await sb.functions.invoke("create-checkout", { method: "POST", body: { returnUrl: BASE_URL } });
     if (error) {
       let msg = "No se pudo iniciar el pago. Intenta de nuevo.";
       try { msg = (await error.context.json()).error || msg; } catch { /* sin cuerpo */ }
