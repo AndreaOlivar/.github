@@ -170,7 +170,7 @@
   .initial { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 800; flex: none; }
 
   /* ═══════════════ Perfil ═══════════════ */
-  .cover { position: relative; aspect-ratio: 3 / 1; min-height: 150px; background: linear-gradient(135deg, #2b1220, #6d1d3c 45%, #f0386b); background-size: cover; background-position: center; }
+  .cover { position: relative; width: 100%; height: clamp(150px, 33vw, 226px); background: linear-gradient(135deg, #2b1220, #6d1d3c 45%, #f0386b); background-size: cover; background-position: center; }
   .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(0 0 0 / .45), transparent 55%); border-radius: inherit; }
   .cover-bar { position: absolute; z-index: 1; top: 12px; left: 16px; right: 16px; color: #fff; display: flex; align-items: center; gap: .75rem; }
   .cover-bar .name { font-weight: 800; display: flex; align-items: center; gap: .3rem; }
@@ -194,7 +194,9 @@
   .sub-btn { width: 100%; min-height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 1.3rem; border-radius: 999px;
     background: var(--accent); color: #fff; border: 0; font-weight: 800; font-size: .92rem; letter-spacing: .02em; cursor: pointer; transition: filter .15s; }
   .sub-btn:hover { filter: brightness(1.06); }
-  .sub-btn small { font-weight: 600; font-size: .85rem; opacity: .95; letter-spacing: 0; }
+  .sub-btn { gap: .75rem; }
+  .sub-btn small { font-weight: 600; font-size: .85rem; opacity: .95; letter-spacing: 0; white-space: nowrap; }
+  @media (max-width: 340px) { .sub-btn { padding: 0 1rem; font-size: .82rem; } .sub-btn small { font-size: .78rem; } }
   .sub-perks { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin-top: .7rem; font-size: .78rem; color: var(--mute); }
   .sub-perks span { display: inline-flex; align-items: center; gap: .3rem; }
   .sub-active { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
@@ -324,7 +326,7 @@
   .admin-post:last-child { border-bottom: 0; }
   .admin-post .thumbs-row { display: flex; gap: 4px; flex: none; }
   .admin-post .thumbs-row img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--bg-3); }
-  .brand-edit .cover { aspect-ratio: 3 / 1; border-radius: 14px; min-height: 100px; }
+  .brand-edit .cover { height: clamp(110px, 30vw, 200px); border-radius: 14px; }
   .brand-edit .avatar-xl { margin: -44px 0 0 16px; position: relative; z-index: 2; }
   .legal { max-width: 720px; }
   .legal h2 { font-size: 1.02rem; font-weight: 800; margin: 1.6rem 0 .4rem; }
@@ -385,7 +387,6 @@ const CONFIG = {
   bio: "Contenido exclusivo que no publico en ningún otro lugar. Sesiones nuevas cada semana. 💋",
   priceMxn: 79,
   periodDays: 30,
-  supportEmail: "soporte@tudominio.com",
 };
 const PAGE_SIZE = 12;
 
@@ -399,7 +400,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $("#app");
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
+// Todos los precios del sitio pasan por aquí: "$79 MXN".
+const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n) + " MXN";
 const num = (n) => new Intl.NumberFormat("es-MX", { notation: n >= 10000 ? "compact" : "standard" }).format(n ?? 0);
 const fdate = (d) => new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 const BASE_URL = location.origin + location.pathname;
@@ -527,7 +529,7 @@ function renderChrome() {
   const legal = `
     <a href="#/legal/terminos">Términos</a><a href="#/legal/privacidad">Privacidad</a>
     <a href="#/legal/reembolsos">Reembolsos</a><a href="#/legal/aviso-ia">Aviso legal</a>
-    <a href="mailto:${esc(CONFIG.supportEmail)}">Soporte</a><span>© ${new Date().getFullYear()} ${esc(c.name)}</span>`;
+    <span>© ${new Date().getFullYear()} ${esc(c.name)}</span>`;
   $("#foot-links").innerHTML = legal;
 
   $("#right").innerHTML = `
@@ -1123,7 +1125,7 @@ async function viewPayment(params, alive) {
   $("#pstatus").outerHTML = state.active
     ? `<div class="alert alert-ok">¡Listo! Tu suscripción está activa hasta el ${fdate(state.sub.current_period_end)}.</div>
        <a class="btn btn-accent btn-block" style="margin-top:1rem" href="#/">Ver el contenido</a>`
-    : `<div class="alert alert-warn">Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; si en 1 hora no se activa, escríbenos a ${esc(CONFIG.supportEmail)}.</div>
+    : `<div class="alert alert-warn">Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; tu acceso se activa automáticamente en cuanto Mercado Pago lo apruebe.</div>
        <a class="btn btn-line btn-block" style="margin-top:1rem" href="#/cuenta">Ir a mi cuenta</a>`;
 }
 
@@ -1377,24 +1379,22 @@ const LEGAL = {
     <h2>3. Suscripción y pagos</h2><p>La suscripción cuesta ${mxn(CONFIG.priceMxn)} y da ${CONFIG.periodDays} días de acceso desde que se aprueba el pago. No se renueva automáticamente. Los pagos se procesan con Mercado Pago; no guardamos datos de tu tarjeta.</p>
     <h2>4. Uso permitido</h2><p>El contenido es para tu uso personal dentro del sitio. Está prohibido descargarlo, grabarlo, compartirlo, revenderlo o publicarlo en otros lugares.</p>
     <h2>5. Cuentas</h2><p>Tu cuenta es personal. No compartas tu contraseña. Podemos suspender cuentas que incumplan estos términos.</p>
-    <h2>6. Cambios</h2><p>Podemos actualizar estos términos; publicaremos la versión vigente en esta página.</p>
-    <h2>7. Contacto</h2><p>${esc(CONFIG.supportEmail)}</p>`],
+    <h2>6. Cambios</h2><p>Podemos actualizar estos términos; publicaremos la versión vigente en esta página.</p>`],
   privacidad: ["Aviso de privacidad", () => `
     <p>Tratamos tus datos conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
     <h2>Datos que recopilamos</h2><ul><li>Correo electrónico y nombre de usuario.</li><li>Fecha de nacimiento (solo para verificar mayoría de edad).</li><li>Historial de pagos (monto, fecha, método). No recibimos ni guardamos datos de tarjetas.</li></ul>
     <h2>Para qué los usamos</h2><p>Para crear y proteger tu cuenta, verificar tu edad, darte acceso al contenido y atender aclaraciones de pago.</p>
     <h2>Con quién los compartimos</h2><p>Con Supabase (alojamiento de la cuenta y base de datos) y Mercado Pago (procesamiento del pago). No vendemos tus datos.</p>
-    <h2>Tus derechos ARCO</h2><p>Puedes pedir acceso, rectificación, cancelación u oposición escribiendo a ${esc(CONFIG.supportEmail)}.</p>`],
+    <h2>Tus derechos</h2><p>Puedes consultar y corregir tu nombre de usuario y ver tu historial de pagos en cualquier momento desde “Mi cuenta”.</p>`],
   reembolsos: ["Política de reembolsos", () => `
     <p>Por tratarse de contenido digital al que se accede de inmediato, los pagos no son reembolsables una vez activado el acceso, salvo en estos casos:</p>
     <ul><li>Cobro duplicado.</li><li>Pagaste y el acceso no se activó en 24 horas.</li><li>Fallo técnico del sitio que te impidió ver el contenido.</li></ul>
-    <p>Escríbenos a ${esc(CONFIG.supportEmail)} con tu correo de registro y el número de operación de Mercado Pago. Respondemos en un máximo de 72 horas.</p>
+    <p>Para estos casos puedes iniciar una aclaración desde tu cuenta de Mercado Pago con el número de operación de tu pago.</p>
     <p>Si haces un contracargo con tu banco, tu acceso se cancela automáticamente.</p>`],
   "aviso-ia": ["Aviso legal", () => `
     <p>El contenido visual de este sitio se produce con herramientas digitales, incluida inteligencia artificial.</p>
     <ul><li>${esc(creator().name)} es un personaje de la marca y se representa siempre como adulta (mayor de 18 años).</li>
-    <li>El contenido no está basado en la imagen de ninguna persona real; cualquier parecido es coincidencia.</li></ul>
-    <p>Si crees que algún contenido se parece a una persona real o infringe derechos, repórtalo a ${esc(CONFIG.supportEmail)} y lo revisaremos de inmediato.</p>`],
+    <li>El contenido no está basado en la imagen de ninguna persona real; cualquier parecido es coincidencia.</li></ul>`],
 };
 function viewLegal(key) {
   app.dataset.view = "legal";
