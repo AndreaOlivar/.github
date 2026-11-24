@@ -18,6 +18,13 @@
   media-src 'self' blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
   connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net;
   base-uri 'self'; form-action 'self'; object-src 'none'">
+<style id="antiframe">html { display: none !important; }</style>
+<script>
+  // Anti-clickjacking: GitHub Pages no permite enviar el encabezado X-Frame-Options,
+  // así que la página se niega a mostrarse si otro sitio la mete en un <iframe>.
+  if (window.top === window.self) { document.getElementById("antiframe").remove(); }
+  else { try { window.top.location = window.self.location.href; } catch (e) { /* bloqueado */ } }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -396,7 +403,9 @@ const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency:
 const num = (n) => new Intl.NumberFormat("es-MX", { notation: n >= 10000 ? "compact" : "standard" }).format(n ?? 0);
 const fdate = (d) => new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 const BASE_URL = location.origin + location.pathname;
-const publicUrl = (bucket, path) => `${CONFIG.supabaseUrl}/storage/v1/object/public/${bucket}/${String(path).split("/").map(encodeURIComponent).join("/")}`;
+// Codifica también ' ( ) para que una ruta nunca pueda romper un url('…') de CSS.
+const encPath = (s) => encodeURIComponent(s).replace(/['()*!]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
+const publicUrl = (bucket, path) => `${CONFIG.supabaseUrl}/storage/v1/object/public/${bucket}/${String(path).split("/").map(encPath).join("/")}`;
 const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
 function timeAgo(d) {
   const s = (new Date(d) - Date.now()) / 1000;
