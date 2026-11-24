@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Andrea Olivar · Contenido exclusivo</title>
+<meta name="description" content="Contenido exclusivo de Andrea Olivar para suscriptores mayores de 18 años.">
+<meta name="rating" content="adult">
+<meta name="theme-color" content="#0b0a0d">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
+  media-src 'self' blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
+  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co;
+  base-uri 'self'; form-action 'self'; object-src 'none'">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0b0a0d; --ink-2: #131117; --ink-3: #1c1922; --line: #2a2631;
+    --mute: #9a93a6; --soft: #ddd7e6; --white: #fff;
+    --rose: #e8557a; --rose-2: #ff7b9c; --gold: #e9c27a; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+    --radius: 18px;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "Playfair Display", ui-serif, Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html { color-scheme: dark; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; min-height: 100dvh; font-family: var(--sans); color: var(--soft); background: var(--ink);
+    -webkit-font-smoothing: antialiased; line-height: 1.55; display: flex; flex-direction: column;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(60rem 30rem at 10% -10%, rgb(232 85 122 / .16), transparent 60%),
+      radial-gradient(50rem 30rem at 100% 0%, rgb(233 194 122 / .09), transparent 60%);
+  }
+  a { color: inherit; text-decoration: none; }
+  img, video { max-width: 100%; display: block; }
+  h1, h2, h3 { color: var(--white); line-height: 1.15; margin: 0; }
+  .display { font-family: var(--display); font-weight: 500; }
+  .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+  .narrow { max-width: 460px; }
+  .muted { color: var(--mute); }
+  .small { font-size: .875rem; }
+  .xs { font-size: .75rem; }
+  .center { text-align: center; }
+  .stack > * + * { margin-top: 1rem; }
+  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .hidden { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* Botones y formularios */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    border-radius: 999px; padding: .8rem 1.5rem; font: 600 .9rem var(--sans); cursor: pointer;
+    border: 1px solid transparent; transition: filter .15s, border-color .15s, transform .15s; white-space: nowrap;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn:focus-visible, .input:focus-visible { outline: 2px solid var(--rose-2); outline-offset: 2px; }
+  .btn[disabled] { opacity: .55; cursor: not-allowed; }
+  .btn-primary { color: #fff; background: linear-gradient(90deg, var(--rose), var(--rose-2)); box-shadow: 0 10px 30px -10px rgb(232 85 122 / .6); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { color: var(--soft); background: var(--ink-2); border-color: var(--line); }
+  .btn-ghost:hover { border-color: var(--mute); }
+  .btn-danger { color: var(--bad); background: transparent; border-color: rgb(248 113 113 / .35); }
+  .btn-sm { padding: .5rem 1rem; font-size: .82rem; }
+  .btn-block { width: 100%; }
+  .label { display: block; font-size: .875rem; font-weight: 500; margin-bottom: .4rem; color: var(--soft); }
+  .input {
+    width: 100%; border-radius: 12px; border: 1px solid var(--line); background: var(--ink-2); color: var(--soft);
+    padding: .8rem 1rem; font: 400 1rem var(--sans);
+  }
+  .input:focus { border-color: var(--rose); }
+  textarea.input { min-height: 96px; resize: vertical; }
+  .check { display: flex; gap: .6rem; align-items: flex-start; font-size: .875rem; color: var(--mute); }
+  .check input { margin-top: .2rem; accent-color: var(--rose); width: 1rem; height: 1rem; flex: none; }
+  .hint { font-size: .78rem; color: var(--mute); margin-top: .35rem; }
+  .card { border: 1px solid var(--line); border-radius: var(--radius); background: rgb(19 17 23 / .85); backdrop-filter: blur(8px); }
+  .pad { padding: 1.75rem; }
+  .alert { border-radius: 12px; padding: .8rem 1rem; font-size: .9rem; border: 1px solid; }
+  .alert-bad { color: #fecaca; background: rgb(248 113 113 / .08); border-color: rgb(248 113 113 / .3); }
+  .alert-ok { color: #bbf7d0; background: rgb(74 222 128 / .08); border-color: rgb(74 222 128 / .3); }
+  .alert-warn { color: #fde68a; background: rgb(251 191 36 / .08); border-color: rgb(251 191 36 / .3); }
+  .badge { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .3rem .75rem; font-size: .75rem; font-weight: 600; border: 1px solid var(--line); background: var(--ink-2); }
+  .badge-ai { color: var(--gold); border-color: rgb(233 194 122 / .35); }
+  .badge-ok { color: var(--ok); border-color: rgb(74 222 128 / .35); }
+  .badge-off { color: var(--mute); }
+  .spinner { width: 1.1rem; height: 1.1rem; border-radius: 50%; border: 2px solid rgb(255 255 255 / .25); border-top-color: #fff; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Encabezado */
+  header.top { position: sticky; top: 0; z-index: 40; background: rgb(11 10 13 / .8); backdrop-filter: blur(14px); border-bottom: 1px solid rgb(42 38 49 / .7); }
+  header.top nav { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .logo { font-family: var(--display); font-size: 1.3rem; color: #fff; }
+  .logo span { color: var(--rose-2); }
+  .nav-links { display: flex; align-items: center; gap: .4rem; font-size: .9rem; }
+  .nav-link { padding: .5rem .9rem; border-radius: 999px; color: var(--soft); }
+  .nav-link:hover { color: #fff; }
+  .avatar { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: rgb(232 85 122 / .2); color: var(--rose-2); font-size: .75rem; font-weight: 700; }
+  .logo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .nav-links { flex: none; }
+  @media (max-width: 560px) { .hide-sm { display: none !important; } }
+  @media (max-width: 380px) {
+    .logo { font-size: 1.05rem; }
+    .nav-links { gap: .15rem; }
+    .nav-link { padding: .45rem .55rem; }
+    .btn-sm { padding: .45rem .75rem; font-size: .78rem; }
+    .stats { gap: 1.1rem; }
+    .pad { padding: 1.25rem; }
+  }
+
+  main { flex: 1; padding-bottom: 4rem; }
+
+  /* Portada */
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2.5rem; align-items: center; padding: 3.5rem 0 2rem; }
+  .hero > * { min-width: 0; }
+  .hero h1 { overflow-wrap: break-word; }
+  @media (min-width: 880px) { .hero { grid-template-columns: 1.1fr .9fr; padding: 5rem 0 3rem; } }
+  .hero h1 { font-family: var(--display); font-weight: 500; font-size: clamp(2.4rem, 6vw, 4rem); }
+  .hero h1 em { color: var(--rose-2); font-style: italic; }
+  .hero p.lead { font-size: 1.1rem; color: var(--mute); max-width: 34rem; }
+  .stats { display: flex; flex-wrap: wrap; gap: 2rem; margin-top: 2rem; }
+  .stats b { display: block; font-size: 1.6rem; color: #fff; font-family: var(--display); font-weight: 500; }
+  .stats span { font-size: .8rem; color: var(--mute); text-transform: uppercase; letter-spacing: .08em; }
+  .hero-art { position: relative; aspect-ratio: 4/5; border-radius: 28px; overflow: hidden; border: 1px solid var(--line);
+    background: linear-gradient(160deg, #2a1420, #120d16 55%, #1d1610); }
+  .hero-art img { width: 100%; height: 100%; object-fit: cover; filter: blur(22px) saturate(1.2); transform: scale(1.15); }
+  .hero-art .veil { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 2rem;
+    background: linear-gradient(to top, rgb(11 10 13 / .9), rgb(11 10 13 / .25)); }
+  .lock { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; margin: 0 auto .9rem; border-radius: 50%;
+    background: rgb(255 255 255 / .08); border: 1px solid rgb(255 255 255 / .18); }
+  .lock svg { width: 1.4rem; height: 1.4rem; }
+
+  .section { padding: 3rem 0; }
+  .section-title { font-family: var(--display); font-weight: 500; font-size: clamp(1.8rem, 4vw, 2.4rem); margin-bottom: .5rem; }
+  .price-card { max-width: 440px; margin: 0 auto; padding: 2.2rem; text-align: center; position: relative; overflow: hidden; }
+  .price-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--rose), var(--gold)); }
+  .price { font-family: var(--display); font-size: 3.4rem; color: #fff; line-height: 1; margin: 1rem 0 .3rem; }
+  .price small { font-family: var(--sans); font-size: 1rem; color: var(--mute); }
+  .perks { list-style: none; padding: 0; margin: 1.5rem 0; text-align: left; }
+  .perks li { display: flex; gap: .6rem; padding: .45rem 0; font-size: .95rem; }
+  .perks li::before { content: "✓"; color: var(--rose-2); font-weight: 700; }
+  .faq details { border-bottom: 1px solid var(--line); padding: 1rem 0; }
+  .faq summary { cursor: pointer; color: #fff; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+  .faq summary::after { content: "+"; color: var(--rose-2); font-size: 1.2rem; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq p { margin: .6rem 0 0; color: var(--mute); font-size: .95rem; }
+
+  /* Galería */
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+  .tile { position: relative; aspect-ratio: 4/5; border-radius: 16px; overflow: hidden; background: var(--ink-3); border: 1px solid var(--line); cursor: pointer; }
+  .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; }
+  .tile.locked img { filter: blur(18px) saturate(1.1); transform: scale(1.12); }
+  .tile .over { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1rem;
+    background: linear-gradient(to top, rgb(11 10 13 / .85), rgb(11 10 13 / .15)); font-size: .85rem; }
+  .tile .kind { position: absolute; top: .6rem; right: .6rem; background: rgb(0 0 0 / .55); border-radius: 999px; padding: .2rem .55rem; font-size: .7rem; color: #fff; }
+  .tile .free { position: absolute; top: .6rem; left: .6rem; background: var(--rose); border-radius: 999px; padding: .2rem .55rem; font-size: .7rem; color: #fff; font-weight: 600; }
+  .post { margin-bottom: 2.2rem; }
+  .post-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; margin-bottom: .7rem; }
+  .post-caption { white-space: pre-wrap; margin: 0 0 .8rem; }
+  .post .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .protected { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .protected img, .protected video { -webkit-user-drag: none; }
+  .watermark { position: absolute; inset: 0; pointer-events: none; overflow: hidden; display: flex; flex-wrap: wrap;
+    align-content: space-around; justify-content: space-around; transform: rotate(-24deg) scale(1.4);
+    color: rgb(255 255 255 / .11); font-size: .8rem; font-weight: 600; letter-spacing: .05em; }
+  .paywall { text-align: center; padding: 2rem; margin-bottom: 2rem; }
+
+  /* Visor */
+  .lightbox { position: fixed; inset: 0; z-index: 90; background: rgb(5 4 7 / .96); display: grid; place-items: center; padding: 16px; }
+  .lightbox .media { position: relative; max-width: min(1000px, 100%); max-height: 88dvh; }
+  .lightbox img, .lightbox video { max-height: 88dvh; width: auto; margin: 0 auto; border-radius: 12px; }
+  .lightbox .close { position: absolute; top: 12px; right: 12px; z-index: 2; }
+
+  /* Cuenta y admin */
+  .tabs-grid { display: grid; gap: 1.25rem; }
+  @media (min-width: 880px) { .tabs-grid { grid-template-columns: 1.2fr .8fr; } }
+  table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+  th, td { text-align: left; padding: .65rem .4rem; border-bottom: 1px solid var(--line); }
+  th { color: var(--mute); font-weight: 500; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+  .table-wrap { overflow-x: auto; }
+  .drop { border: 1.5px dashed var(--line); border-radius: 16px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: border-color .15s; }
+  .drop:hover, .drop.drag { border-color: var(--rose); }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 1rem; }
+  .thumbs div { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--ink-3); position: relative; }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; }
+  .progress { height: 6px; border-radius: 999px; background: var(--ink-3); overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--rose), var(--gold)); transition: width .2s; }
+
+  .legal { max-width: 760px; }
+  .legal h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; }
+  .legal p, .legal li { color: var(--mute); }
+
+  footer.bottom { border-top: 1px solid rgb(42 38 49 / .7); padding: 2.5rem 0 2rem; font-size: .875rem; color: var(--mute); }
+  footer.bottom .cols { display: grid; gap: 1.5rem; }
+  @media (min-width: 720px) { footer.bottom .cols { grid-template-columns: 1fr 1fr; } footer.bottom .links { justify-content: flex-end; } }
+  footer.bottom .links { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; }
+  footer.bottom a:hover { color: #fff; }
+
+  /* Aviso de edad */
+  .gate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgb(11 10 13 / .96); backdrop-filter: blur(20px); }
+  .gate .card { max-width: 440px; width: 100%; padding: 2rem; text-align: center; }
+  .gate .age { display: grid; place-items: center; width: 3.6rem; height: 3.6rem; margin: 0 auto 1.2rem; border-radius: 50%; border: 1px solid rgb(232 85 122 / .45); color: var(--rose-2); font-weight: 700; font-size: 1.1rem; }
+
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 120; max-width: calc(100% - 32px);
+    background: var(--ink-3); border: 1px solid var(--line); border-radius: 12px; padding: .8rem 1.2rem; font-size: .9rem; box-shadow: 0 20px 40px -15px #000; }
+  .loading { display: grid; place-items: center; min-height: 50vh; }
+</style>
+</head>
+<body>
+
+<noscript><div class="wrap" style="padding:2rem 16px">Necesitas activar JavaScript para usar este sitio.</div></noscript>
+
+<header class="top">
+  <nav class="wrap">
+    <a href="#/" class="logo" id="logo"></a>
+    <div class="nav-links" id="nav"></div>
+  </nav>
+</header>
+
+<main id="app"><div class="loading"><div class="spinner"></div></div></main>
+
+<footer class="bottom">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <p class="logo" id="foot-name" style="margin:0"></p>
+        <p style="max-width:26rem;margin:.5rem 0 0">Contenido exclusivo solo para mayores de 18 años.</p>
+      </div>
+      <div class="links">
+        <a href="#/legal/terminos">Términos</a>
+        <a href="#/legal/privacidad">Privacidad</a>
+        <a href="#/legal/reembolsos">Reembolsos</a>
+        <a href="#/legal/aviso-ia">Aviso legal</a>
+        <a id="foot-mail" href="#">Soporte</a>
+      </div>
+    </div>
+    <p class="xs center" style="margin-top:2rem;opacity:.7" id="foot-copy"></p>
+  </div>
+</footer>
+
+<div class="gate hidden" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <div class="card">
+    <div class="age">18+</div>
+    <h2 id="gate-title" class="display" style="font-size:1.6rem">Contenido para adultos</h2>
+    <p class="muted small">Este sitio contiene material explícito para mayores de 18 años.</p>
+    <p class="muted small">Al entrar confirmas que eres mayor de edad y que ver este contenido es legal donde vives.</p>
+    <div class="stack" style="margin-top:1.5rem">
+      <button class="btn btn-primary btn-block" id="gate-ok">Soy mayor de 18 · Entrar</button>
+      <a class="btn btn-ghost btn-block" href="https://www.google.com" rel="noreferrer">Salir</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+// ════════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN — cambia aquí el nombre de la modelo y los textos.
+//  La URL y la llave de Supabase son públicas: la seguridad la da RLS.
+// ════════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  supabaseUrl: "https://dakhnqriwbzihlzhtfcb.supabase.co",
+  supabaseKey: "sb_publishable_rRcNEvZ9n0IEJzTQcK90nQ_5lfwSDYs",
+  name: "Andrea Olivar",
+  handle: "@andreaolivar",
+  tagline: "Lo que no publico en ningún otro lugar.",
+  bio: "Sesiones nuevas cada semana, solo para suscriptores.",
+  priceMxn: 79,
+  periodDays: 30,
+  supportEmail: "soporte@tudominio.com",
+};
+
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm";
+
+const sb = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
+  auth: { flowType: "pkce", detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+});
+
+// ─── Utilidades ─────────────────────────────────────────────────────────
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const app = $("#app");
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(n);
+const fdate = (d) => new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
+const BASE_URL = location.origin + location.pathname;
+const previewUrl = (path) => `${CONFIG.supabaseUrl}/storage/v1/object/public/previews/${path.split("/").map(encodeURIComponent).join("/")}`;
+const LOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`;
+
+function toast(msg, ms = 3500) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.setAttribute("role", "status"); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), ms);
+}
+function setBusy(btn, busy, label) {
+  if (!btn) return;
+  if (busy) { btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>${label ? esc(label) : ""}`; }
+  else { btn.disabled = false; btn.innerHTML = btn.dataset.label ?? btn.innerHTML; }
+}
+function showError(el, msg) { el.innerHTML = msg ? `<div class="alert alert-bad">${esc(msg)}</div>` : ""; }
+function authErrorMsg(e) {
+  const m = (e?.message || "").toLowerCase();
+  if (m.includes("invalid login")) return "Correo o contraseña incorrectos.";
+  if (m.includes("email not confirmed")) return "Confirma tu correo antes de entrar. Revisa tu bandeja (y spam).";
+  if (m.includes("already registered")) return "Ese correo ya tiene una cuenta. Inicia sesión.";
+  if (m.includes("database error")) return "No se pudo crear la cuenta: revisa que seas mayor de 18, hayas aceptado los términos y que el nombre de usuario no esté ocupado.";
+  if (m.includes("password")) return "La contraseña debe tener al menos 8 caracteres.";
+  if (m.includes("rate limit") || m.includes("security purposes")) return "Demasiados intentos. Espera un momento e intenta de nuevo.";
+  return e?.message || "Ocurrió un error. Intenta de nuevo.";
+}
+
+// ─── Estado de la sesión ───────────────────────────────────────────────
+const state = { user: null, profile: null, sub: null, active: false, isAdmin: false };
+
+async function loadSession() {
+  const { data: { user } } = await sb.auth.getUser();
+  state.user = user ?? null;
+  state.profile = null; state.sub = null; state.active = false; state.isAdmin = false;
+  if (user) {
+    const [{ data: profile }, { data: sub }] = await Promise.all([
+      sb.from("profiles").select("username, is_admin, created_at").eq("id", user.id).maybeSingle(),
+      sb.from("subscriptions").select("current_period_end").eq("user_id", user.id).maybeSingle(),
+    ]);
+    state.profile = profile; state.sub = sub;
+    state.active = !!sub && new Date(sub.current_period_end) > new Date();
+    state.isAdmin = !!profile?.is_admin;
+  }
+  renderNav();
+}
+
+function renderNav() {
+  const nav = $("#nav");
+  if (state.user) {
+    const u = state.profile?.username ?? "Mi cuenta";
+    nav.innerHTML = `
+      <a class="nav-link hide-sm" href="#/galeria">Galería</a>
+      ${state.isAdmin ? `<a class="nav-link" style="color:var(--gold)" href="#/admin">Admin</a>` : ""}
+      ${state.active ? "" : `<a class="btn btn-primary btn-sm" href="#/cuenta">Suscribirme</a>`}
+      <a class="btn btn-ghost btn-sm" href="#/cuenta"><span class="avatar">${esc(u.slice(0, 1).toUpperCase())}</span><span class="hide-sm">${esc(u)}</span></a>`;
+  } else {
+    nav.innerHTML = `
+      <a class="nav-link hide-sm" href="#/galeria">Galería</a>
+      <a class="nav-link" href="#/entrar">Entrar</a>
+      <a class="btn btn-primary btn-sm" href="#/registro">Crear cuenta</a>`;
+  }
+}
+
+// ─── Enrutador (hash) ──────────────────────────────────────────────────
+const routes = {
+  "/": viewHome,
+  "/galeria": viewGallery,
+  "/registro": viewRegister,
+  "/entrar": viewLogin,
+  "/recuperar": viewForgot,
+  "/nueva-clave": viewNewPassword,
+  "/cuenta": viewAccount,
+  "/pago": viewPayment,
+  "/admin": viewAdmin,
+  "/legal/terminos": () => viewLegal("terminos"),
+  "/legal/privacidad": () => viewLegal("privacidad"),
+  "/legal/reembolsos": () => viewLegal("reembolsos"),
+  "/legal/aviso-ia": () => viewLegal("aviso-ia"),
+};
+const PRIVATE = ["/cuenta", "/admin"];
+let renderToken = 0;
+
+function currentRoute() {
+  const h = location.hash.replace(/^#/, "") || "/";
+  const [path, query = ""] = h.split("?");
+  return { path, params: new URLSearchParams(query) };
+}
+function go(hash) { if (location.hash === hash) render(); else location.hash = hash; }
+
+async function render() {
+  const token = ++renderToken;
+  const { path, params } = currentRoute();
+  const view = routes[path];
+  if (!view) { app.innerHTML = viewNotFound(); return; }
+  if (PRIVATE.includes(path) && !state.user) { go(`#/entrar?next=${encodeURIComponent(path)}`); return; }
+  app.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+  window.scrollTo({ top: 0 });
+  try {
+    await view(params, () => token === renderToken);
+  } catch (e) {
+    console.error(e);
+    if (token === renderToken) app.innerHTML = `<div class="wrap narrow section"><div class="alert alert-bad">Algo salió mal al cargar esta página. Recarga e intenta de nuevo.</div></div>`;
+  }
+}
+
+// ─── Vistas ────────────────────────────────────────────────────────────
+async function viewHome(_p, alive) {
+  const [{ data: stats }, { data: media }] = await Promise.all([
+    sb.rpc("public_stats"),
+    sb.from("post_media").select("preview_path, kind").order("created_at", { ascending: false }).limit(6),
+  ]);
+  if (!alive()) return;
+  const s = stats ?? { posts: 0, photos: 0, videos: 0 };
+  const heroImg = media?.[0] ? `<img src="${esc(previewUrl(media[0].preview_path))}" alt="">` : "";
+  const cta = state.active
+    ? `<a class="btn btn-primary" href="#/galeria">Ver mi contenido</a>`
+    : state.user
+      ? `<a class="btn btn-primary" href="#/cuenta">Suscribirme por ${mxn(CONFIG.priceMxn)}/mes</a>`
+      : `<a class="btn btn-primary" href="#/registro">Suscribirme por ${mxn(CONFIG.priceMxn)}/mes</a>`;
+
+  app.innerHTML = `
+  <section class="wrap hero">
+    <div>
+      <span class="badge badge-ai">✦ Contenido exclusivo</span>
+      <h1 style="margin-top:1.2rem">${esc(CONFIG.name)}<br><em>${esc(CONFIG.tagline)}</em></h1>
+      <p class="lead">${esc(CONFIG.bio)}</p>
+      <div class="row" style="margin-top:1.8rem">${cta}<a class="btn btn-ghost" href="#/galeria">Ver galería</a></div>
+      <div class="stats">
+        <div><b>${s.photos}</b><span>Fotos</span></div>
+        <div><b>${s.videos}</b><span>Videos</span></div>
+        <div><b>${s.posts}</b><span>Publicaciones</span></div>
+      </div>
+    </div>
+    <div class="hero-art">${heroImg}
+      <div class="veil"><div><div class="lock">${LOCK}</div>
+        <p style="color:#fff;font-weight:600;margin:0">Contenido privado</p>
+        <p class="muted small" style="margin:.3rem 0 0">Solo para suscriptores · ${esc(CONFIG.handle)}</p></div></div>
+    </div>
+  </section>
+
+  ${media?.length ? `
+  <section class="wrap section">
+    <div class="post-head"><h2 class="section-title">Lo más reciente</h2><a class="muted small" href="#/galeria">Ver todo →</a></div>
+    <div class="grid">${media.map((m) => `
+      <a class="tile locked" href="#/galeria"><img src="${esc(previewUrl(m.preview_path))}" alt="" loading="lazy">
+        <span class="kind">${m.kind === "video" ? "▶ Video" : "Foto"}</span>
+        <div class="over"><div><div class="lock">${LOCK}</div>Suscríbete para verla</div></div></a>`).join("")}
+    </div>
+  </section>` : ""}
+
+  <section class="wrap section" id="precio">
+    <div class="card price-card">
+      <span class="badge">Suscripción mensual</span>
+      <div class="price">${mxn(CONFIG.priceMxn)} <small>/ mes</small></div>
+      <p class="muted small" style="margin:0">Pago seguro con Mercado Pago · tarjeta, débito u OXXO</p>
+      <ul class="perks">
+        <li>Acceso completo a todas las fotos y videos</li>
+        <li>Contenido nuevo cada semana</li>
+        <li>Sin renovación automática: tú decides si renuevas</li>
+        <li>Cargo discreto y cuenta privada</li>
+      </ul>
+      ${state.active ? `<a class="btn btn-ghost btn-block" href="#/galeria">Ya eres suscriptor · Ir a la galería</a>`
+        : `<a class="btn btn-primary btn-block" href="${state.user ? "#/cuenta" : "#/registro"}">Suscribirme ahora</a>`}
+    </div>
+  </section>
+
+  <section class="wrap section faq" style="max-width:760px">
+    <h2 class="section-title center" style="margin-bottom:1.5rem">Preguntas frecuentes</h2>
+    <details><summary>¿Cómo pago?</summary><p>Con Mercado Pago: tarjeta de crédito, débito o efectivo en OXXO. Tu acceso se activa en cuanto el pago se aprueba (en OXXO puede tardar unas horas).</p></details>
+    <details><summary>¿Se renueva sola?</summary><p>No. Cada pago te da ${CONFIG.periodDays} días de acceso. Antes de que termine puedes renovar desde “Mi cuenta”; si renuevas antes, los días se suman.</p></details>
+    <details><summary>¿Qué aparece en mi estado de cuenta?</summary><p>Un cargo de Mercado Pago a nombre del comercio.</p></details>
+    <details><summary>¿Puedo descargar el contenido?</summary><p>El contenido es para verlo dentro del sitio. Compartirlo o revenderlo está prohibido y causa la cancelación de la cuenta.</p></details>
+  </section>`;
+}
+
+async function viewGallery(_p, alive) {
+  const { data: posts, error } = await sb.from("posts")
+    .select("id, caption, is_free, published_at, post_media(id, storage_path, preview_path, kind, sort)")
+    .order("published_at", { ascending: false }).limit(60);
+  if (error) throw error;
+  if (!alive()) return;
+
+  const canSee = (p) => state.isAdmin || state.active || (p.is_free && state.user);
+  const visiblePaths = (posts ?? []).filter(canSee).flatMap((p) => p.post_media.map((m) => m.storage_path));
+
+  // URLs firmadas que expiran en 10 minutos. Supabase solo las firma si RLS lo permite.
+  const signed = {};
+  if (visiblePaths.length) {
+    const { data } = await sb.storage.from("content").createSignedUrls(visiblePaths, 600);
+    (data ?? []).forEach((d) => { if (d.signedUrl) signed[d.path] = d.signedUrl; });
+  }
+  if (!alive()) return;
+
+  const wm = esc(`${state.profile?.username ?? ""} · ${CONFIG.handle}`);
+  const watermark = `<div class="watermark">${Array.from({ length: 18 }, () => `<span>${wm}</span>`).join("")}</div>`;
+
+  const paywall = state.active || state.isAdmin ? "" : `
+    <div class="card paywall">
+      <div class="lock">${LOCK}</div>
+      <h2 class="display" style="font-size:1.6rem">Desbloquea todo el contenido</h2>
+      <p class="muted">Suscríbete por ${mxn(CONFIG.priceMxn)} al mes y ve todas las fotos y videos sin difuminar.</p>
+      <a class="btn btn-primary" href="${state.user ? "#/cuenta" : "#/registro"}">${state.user ? "Suscribirme" : "Crear cuenta y suscribirme"}</a>
+    </div>`;
+
+  const items = [];
+  const postsHtml = (posts ?? []).map((p) => {
+    const media = [...p.post_media].sort((a, b) => a.sort - b.sort);
+    const tiles = media.map((m) => {
+      const url = signed[m.storage_path];
+      if (url) {
+        const idx = items.push({ url, kind: m.kind }) - 1;
+        return `<div class="tile protected" data-open="${idx}">
+          ${m.kind === "video"
+            ? `<video src="${esc(url)}" preload="metadata" muted playsinline></video><span class="kind">▶ Video</span>`
+            : `<img src="${esc(url)}" alt="" loading="lazy" draggable="false">`}
+          ${p.is_free ? `<span class="free">Gratis</span>` : ""}${watermark}</div>`;
+      }
+      return `<a class="tile locked" href="${state.user ? "#/cuenta" : "#/registro"}">
+        <img src="${esc(previewUrl(m.preview_path))}" alt="" loading="lazy">
+        <span class="kind">${m.kind === "video" ? "▶ Video" : "Foto"}</span>
+        ${p.is_free ? `<span class="free">Gratis</span>` : ""}
+        <div class="over"><div><div class="lock">${LOCK}</div>${p.is_free ? "Crea una cuenta gratis para verla" : "Solo suscriptores"}</div></div></a>`;
+    }).join("");
+    return `<article class="post">
+      <div class="post-head"><span class="muted small">${fdate(p.published_at)}</span><span class="muted xs">${media.length} archivo${media.length === 1 ? "" : "s"}</span></div>
+      ${p.caption ? `<p class="post-caption">${esc(p.caption)}</p>` : ""}
+      <div class="grid">${tiles}</div></article>`;
+  }).join("");
+
+  app.innerHTML = `
+  <section class="wrap section">
+    <div class="post-head" style="margin-bottom:1.5rem">
+      <div><h1 class="section-title" style="margin:0">Galería</h1><p class="muted small" style="margin:.2rem 0 0">${esc(CONFIG.handle)}</p></div>
+      ${state.active ? `<span class="badge badge-ok">● Suscripción activa</span>` : ""}
+    </div>
+    ${paywall}
+    ${postsHtml || `<div class="card pad center muted">Todavía no hay publicaciones. ¡Vuelve pronto!</div>`}
+  </section>`;
+
+  app.addEventListener("contextmenu", blockContext);
+  $$("[data-open]", app).forEach((el) => el.addEventListener("click", () => openLightbox(items[+el.dataset.open], watermark)));
+}
+function blockContext(e) { if (e.target.closest(".protected, .lightbox")) e.preventDefault(); }
+
+function openLightbox(item, watermark) {
+  const box = document.createElement("div");
+  box.className = "lightbox protected";
+  box.innerHTML = `<button class="btn btn-ghost btn-sm close" aria-label="Cerrar">✕ Cerrar</button>
+    <div class="media">${item.kind === "video"
+      ? `<video src="${esc(item.url)}" controls autoplay playsinline controlslist="nodownload noplaybackrate" disablepictureinpicture></video>`
+      : `<img src="${esc(item.url)}" alt="" draggable="false">`}${watermark}</div>`;
+  const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".close")) close(); });
+  box.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.addEventListener("keydown", onKey);
+  document.body.append(box);
+}
+
+function authShell(title, subtitle, body) {
+  return `<section class="wrap narrow section">
+    <div class="card pad">
+      <h1 class="display" style="font-size:1.9rem">${title}</h1>
+      <p class="muted small" style="margin:.4rem 0 1.5rem">${subtitle}</p>
+      ${body}
+    </div></section>`;
+}
+
+async function viewRegister() {
+  if (state.user) return go("#/cuenta");
+  const max = new Date(); max.setFullYear(max.getFullYear() - 18);
+  app.innerHTML = authShell("Crea tu cuenta", "Solo para mayores de 18 años.", `
+    <form id="f" class="stack" novalidate>
+      <div><label class="label" for="username">Nombre de usuario</label>
+        <input class="input" id="username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" autocomplete="username">
+        <p class="hint">3 a 20 caracteres: letras, números o guion bajo.</p></div>
+      <div><label class="label" for="email">Correo electrónico</label>
+        <input class="input" id="email" name="email" type="email" required autocomplete="email"></div>
+      <div><label class="label" for="password">Contraseña</label>
+        <input class="input" id="password" name="password" type="password" required minlength="8" autocomplete="new-password">
+        <p class="hint">Mínimo 8 caracteres.</p></div>
+      <div><label class="label" for="birthdate">Fecha de nacimiento</label>
+        <input class="input" id="birthdate" name="birthdate" type="date" required max="${max.toISOString().slice(0, 10)}"></div>
+      <label class="check"><input type="checkbox" name="terms" required>
+        <span>Confirmo que soy mayor de 18 años y acepto los <a href="#/legal/terminos" style="color:var(--rose-2)">Términos</a> y el
+        <a href="#/legal/privacidad" style="color:var(--rose-2)">Aviso de privacidad</a>.</span></label>
+      <div id="err"></div>
+      <button class="btn btn-primary btn-block" type="submit">Crear cuenta</button>
+      <p class="center small muted">¿Ya tienes cuenta? <a href="#/entrar" style="color:var(--rose-2)">Inicia sesión</a></p>
+    </form>`);
+
+  $("#f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button[type=submit]");
+    const d = Object.fromEntries(new FormData(f));
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(d.username)) return showError(err, "El nombre de usuario no es válido.");
+    if (!/^\S+@\S+\.\S+$/.test(d.email)) return showError(err, "Escribe un correo válido.");
+    if ((d.password || "").length < 8) return showError(err, "La contraseña debe tener al menos 8 caracteres.");
+    if (!d.birthdate || new Date(d.birthdate) > max) return showError(err, "Debes ser mayor de 18 años para registrarte.");
+    if (!d.terms) return showError(err, "Debes aceptar los términos.");
+    showError(err, ""); setBusy(btn, true, "Creando cuenta…");
+    const { data, error } = await sb.auth.signUp({
+      email: d.email.trim(), password: d.password,
+      options: { emailRedirectTo: BASE_URL, data: { username: d.username, birthdate: d.birthdate, accepted_terms: true } },
+    });
+    setBusy(btn, false);
+    if (error) return showError(err, authErrorMsg(error));
+    if (data.session) { await loadSession(); return go("#/cuenta"); }
+    app.innerHTML = authShell("Revisa tu correo", "Ya casi está.", `
+      <div class="alert alert-ok">Te enviamos un enlace a <b>${esc(d.email)}</b>. Ábrelo para confirmar tu cuenta y después inicia sesión.</div>
+      <p class="small muted" style="margin-top:1rem">¿No llegó? Revisa la carpeta de spam o promociones.</p>
+      <a class="btn btn-ghost btn-block" style="margin-top:1rem" href="#/entrar">Ir a iniciar sesión</a>`);
+  });
+}
+
+async function viewLogin(params) {
+  const next = params.get("next");
+  const safeNext = next && /^\/[a-z/-]*$/.test(next) ? next : "/galeria";
+  if (state.user) return go("#" + safeNext);
+  app.innerHTML = authShell("Bienvenido de vuelta", "Inicia sesión para ver tu contenido.", `
+    <form id="f" class="stack">
+      <div><label class="label" for="email">Correo electrónico</label><input class="input" id="email" name="email" type="email" required autocomplete="email"></div>
+      <div><label class="label" for="password">Contraseña</label><input class="input" id="password" name="password" type="password" required autocomplete="current-password"></div>
+      <div id="err"></div>
+      <button class="btn btn-primary btn-block" type="submit">Entrar</button>
+      <div class="row" style="justify-content:space-between">
+        <a href="#/recuperar" class="small muted">¿Olvidaste tu contraseña?</a>
+        <a href="#/registro" class="small" style="color:var(--rose-2)">Crear cuenta</a>
+      </div>
+    </form>`);
+  $("#f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button");
+    const d = Object.fromEntries(new FormData(f));
+    showError(err, ""); setBusy(btn, true, "Entrando…");
+    const { error } = await sb.auth.signInWithPassword({ email: d.email.trim(), password: d.password });
+    setBusy(btn, false);
+    if (error) return showError(err, authErrorMsg(error));
+    await loadSession(); go("#" + safeNext);
+  });
+}
+
+async function viewForgot() {
+  app.innerHTML = authShell("Recupera tu contraseña", "Te enviaremos un enlace para crear una nueva.", `
+    <form id="f" class="stack">
+      <div><label class="label" for="email">Correo electrónico</label><input class="input" id="email" name="email" type="email" required autocomplete="email"></div>
+      <div id="err"></div>
+      <button class="btn btn-primary btn-block" type="submit">Enviar enlace</button>
+      <p class="center small"><a href="#/entrar" class="muted">Volver a iniciar sesión</a></p>
+    </form>`);
+  $("#f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button");
+    const email = new FormData(f).get("email").trim();
+    setBusy(btn, true, "Enviando…");
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: BASE_URL });
+    setBusy(btn, false);
+    if (error) return showError(err, authErrorMsg(error));
+    // Mismo mensaje exista o no la cuenta (no revela qué correos están registrados).
+    err.innerHTML = `<div class="alert alert-ok">Si hay una cuenta con ese correo, te llegará un enlace en unos minutos.</div>`;
+  });
+}
+
+async function viewNewPassword() {
+  if (!state.user) {
+    app.innerHTML = authShell("Enlace inválido", "El enlace expiró o ya se usó.", `<a class="btn btn-primary btn-block" href="#/recuperar">Pedir otro enlace</a>`);
+    return;
+  }
+  app.innerHTML = authShell("Nueva contraseña", "Escribe tu nueva contraseña.", `
+    <form id="f" class="stack">
+      <div><label class="label" for="p1">Nueva contraseña</label><input class="input" id="p1" name="p1" type="password" minlength="8" required autocomplete="new-password"></div>
+      <div><label class="label" for="p2">Repítela</label><input class="input" id="p2" name="p2" type="password" minlength="8" required autocomplete="new-password"></div>
+      <div id="err"></div>
+      <button class="btn btn-primary btn-block" type="submit">Guardar</button>
+    </form>`);
+  $("#f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button");
+    const d = Object.fromEntries(new FormData(f));
+    if (d.p1.length < 8) return showError(err, "Mínimo 8 caracteres.");
+    if (d.p1 !== d.p2) return showError(err, "Las contraseñas no coinciden.");
+    setBusy(btn, true, "Guardando…");
+    const { error } = await sb.auth.updateUser({ password: d.p1 });
+    setBusy(btn, false);
+    if (error) return showError(err, authErrorMsg(error));
+    toast("Contraseña actualizada"); go("#/cuenta");
+  });
+}
+
+async function startCheckout(btn, errEl) {
+  setBusy(btn, true, "Abriendo Mercado Pago…");
+  showError(errEl, "");
+  try {
+    const { data, error } = await sb.functions.invoke("create-checkout", { method: "POST" });
+    if (error) {
+      let msg = "No se pudo iniciar el pago. Intenta de nuevo.";
+      try { msg = (await error.context.json()).error || msg; } catch { /* sin cuerpo */ }
+      throw new Error(msg);
+    }
+    const url = new URL(data.url);
+    if (!/(^|\.)mercadopago\.com(\.mx)?$|(^|\.)mercadolibre\.com(\.mx)?$/.test(url.hostname)) throw new Error("Respuesta de pago inválida.");
+    location.href = url.href;
+  } catch (e) {
+    setBusy(btn, false);
+    showError(errEl, e.message);
+  }
+}
+
+async function viewAccount(_p, alive) {
+  await loadSession();
+  if (!state.user) return go("#/entrar");
+  const { data: payments } = await sb.from("payments")
+    .select("provider_payment_id, amount, currency, method, status, approved_at, days_granted")
+    .order("created_at", { ascending: false }).limit(24);
+  if (!alive()) return;
+
+  const end = state.sub ? new Date(state.sub.current_period_end) : null;
+  const daysLeft = end ? Math.max(0, Math.ceil((end - Date.now()) / 86400000)) : 0;
+  const methodName = { credit_card: "Tarjeta de crédito", debit_card: "Tarjeta de débito", ticket: "OXXO / efectivo", account_money: "Saldo Mercado Pago", bank_transfer: "Transferencia" };
+
+  app.innerHTML = `
+  <section class="wrap section">
+    <h1 class="section-title">Mi cuenta</h1>
+    <p class="muted" style="margin-top:0">Hola, <b style="color:var(--soft)">${esc(state.profile?.username ?? "")}</b> · ${esc(state.user.email)}</p>
+    <div class="tabs-grid" style="margin-top:1.5rem">
+      <div class="stack">
+        <div class="card pad" id="suscripcion">
+          <div class="row" style="justify-content:space-between">
+            <h2 style="font-size:1.15rem">Suscripción</h2>
+            ${state.active ? `<span class="badge badge-ok">● Activa</span>` : `<span class="badge badge-off">○ Inactiva</span>`}
+          </div>
+          ${state.active ? `
+            <p style="margin:1rem 0 .2rem;font-size:2rem;color:#fff" class="display">${daysLeft} día${daysLeft === 1 ? "" : "s"} restantes</p>
+            <p class="muted small" style="margin:0">Tu acceso termina el ${fdate(end)}. Si renuevas ahora, se suman ${CONFIG.periodDays} días.</p>
+            <div class="row" style="margin-top:1.3rem"><a class="btn btn-primary" href="#/galeria">Ir a la galería</a>
+              <button class="btn btn-ghost" id="pay">Renovar · ${mxn(CONFIG.priceMxn)}</button></div>`
+          : `
+            <p class="muted" style="margin:1rem 0">${end ? `Tu acceso terminó el ${fdate(end)}.` : "Aún no tienes una suscripción."}
+              Suscríbete por <b style="color:#fff">${mxn(CONFIG.priceMxn)}</b> y obtén ${CONFIG.periodDays} días de acceso completo.</p>
+            <button class="btn btn-primary" id="pay">Pagar ${mxn(CONFIG.priceMxn)} con Mercado Pago</button>
+            <p class="hint">Tarjeta, débito u OXXO. No se renueva automáticamente.</p>`}
+          <div id="pay-err" style="margin-top:1rem"></div>
+          ${state.user.email_confirmed_at ? "" : `<div class="alert alert-warn" style="margin-top:1rem">Confirma tu correo para poder pagar.</div>`}
+        </div>
+
+        <div class="card pad">
+          <h2 style="font-size:1.15rem;margin-bottom:1rem">Historial de pagos</h2>
+          ${payments?.length ? `<div class="table-wrap"><table>
+            <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Estado</th></tr></thead>
+            <tbody>${payments.map((p) => `<tr>
+              <td>${fdate(p.approved_at)}</td><td>${mxn(p.amount)}</td>
+              <td>${esc(methodName[p.method] ?? p.method ?? "—")}</td>
+              <td>${p.status === "approved" ? `<span style="color:var(--ok)">Aprobado</span>` : `<span style="color:var(--bad)">Reembolsado</span>`}</td></tr>`).join("")}
+            </tbody></table></div>` : `<p class="muted small" style="margin:0">Aún no hay pagos.</p>`}
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="card pad">
+          <h2 style="font-size:1.15rem;margin-bottom:1rem">Perfil</h2>
+          <form id="fu" class="stack">
+            <div><label class="label" for="un">Nombre de usuario</label>
+              <input class="input" id="un" name="username" value="${esc(state.profile?.username ?? "")}" pattern="[A-Za-z0-9_]{3,20}" required></div>
+            <div id="fu-err"></div>
+            <button class="btn btn-ghost btn-block" type="submit">Guardar</button>
+          </form>
+        </div>
+        <div class="card pad stack">
+          <h2 style="font-size:1.15rem">Seguridad</h2>
+          <a class="btn btn-ghost btn-block" href="#/nueva-clave">Cambiar contraseña</a>
+          <button class="btn btn-danger btn-block" id="logout">Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </section>`;
+
+  $("#pay").addEventListener("click", (e) => startCheckout(e.currentTarget, $("#pay-err")));
+  $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); await loadSession(); go("#/"); });
+  $("#fu").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget.querySelector("button"), err = $("#fu-err");
+    const username = new FormData(e.currentTarget).get("username").trim();
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) return showError(err, "Nombre de usuario no válido.");
+    setBusy(btn, true);
+    const { error } = await sb.from("profiles").update({ username }).eq("id", state.user.id);
+    setBusy(btn, false);
+    if (error) return showError(err, error.code === "23505" ? "Ese nombre ya está ocupado." : "No se pudo guardar.");
+    showError(err, ""); toast("Perfil actualizado"); await loadSession();
+  });
+}
+
+async function viewPayment(params, alive) {
+  const st = params.get("estado");
+  if (!state.user) {
+    app.innerHTML = authShell("Inicia sesión", "Entra con tu cuenta para ver el estado de tu pago.", `<a class="btn btn-primary btn-block" href="#/entrar?next=/cuenta">Entrar</a>`);
+    return;
+  }
+  if (st === "rechazado") {
+    app.innerHTML = authShell("El pago no se completó", "No se hizo ningún cargo.", `
+      <div class="alert alert-bad">Mercado Pago rechazó el pago o lo cancelaste. Puedes intentar con otro método.</div>
+      <a class="btn btn-primary btn-block" style="margin-top:1rem" href="#/cuenta">Intentar de nuevo</a>`);
+    return;
+  }
+  if (st === "pendiente") {
+    app.innerHTML = authShell("Pago pendiente", "Estamos esperando la confirmación.", `
+      <div class="alert alert-warn">Si pagaste en OXXO o por transferencia, la acreditación puede tardar desde unos minutos hasta 48 horas. Tu acceso se activa solo cuando se apruebe.</div>
+      <a class="btn btn-ghost btn-block" style="margin-top:1rem" href="#/cuenta">Ir a mi cuenta</a>`);
+    return;
+  }
+  app.innerHTML = authShell("¡Gracias por tu pago!", "Estamos activando tu acceso…", `
+    <div class="row" id="pstatus"><span class="spinner"></span><span class="muted small">Confirmando con Mercado Pago. Esto toma unos segundos.</span></div>`);
+  const before = state.sub?.current_period_end;
+  for (let i = 0; i < 20 && alive(); i++) {
+    await loadSession();
+    if (state.active && state.sub?.current_period_end !== before) break;
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  if (!alive()) return;
+  $("#pstatus").outerHTML = state.active
+    ? `<div class="alert alert-ok">Tu suscripción está activa hasta el ${fdate(state.sub.current_period_end)}.</div>
+       <a class="btn btn-primary btn-block" style="margin-top:1rem" href="#/galeria">Ver el contenido</a>`
+    : `<div class="alert alert-warn">Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; si en 1 hora no se activa, escríbenos a ${esc(CONFIG.supportEmail)}.</div>
+       <a class="btn btn-ghost btn-block" style="margin-top:1rem" href="#/cuenta">Ir a mi cuenta</a>`;
+}
+
+// ─── Admin ─────────────────────────────────────────────────────────────
+async function viewAdmin(_p, alive) {
+  await loadSession();
+  if (!state.isAdmin) { app.innerHTML = viewNotFound(); return; }
+  const [{ data: posts }, { count: subs }, { data: stats }] = await Promise.all([
+    sb.from("posts").select("id, caption, is_free, published_at, post_media(id, storage_path, preview_path, kind)").order("published_at", { ascending: false }).limit(100),
+    sb.from("subscriptions").select("user_id", { count: "exact", head: true }).gt("current_period_end", new Date().toISOString()),
+    sb.rpc("public_stats"),
+  ]);
+  if (!alive()) return;
+
+  app.innerHTML = `
+  <section class="wrap section">
+    <h1 class="section-title">Panel de administración</h1>
+    <div class="stats" style="margin:0 0 2rem"><div><b>${stats?.posts ?? 0}</b><span>Publicaciones</span></div>
+      <div><b>${stats?.photos ?? 0}</b><span>Fotos</span></div><div><b>${stats?.videos ?? 0}</b><span>Videos</span></div></div>
+    <div class="tabs-grid">
+      <div class="card pad">
+        <h2 style="font-size:1.15rem;margin-bottom:1rem">Nueva publicación</h2>
+        <form id="fp" class="stack">
+          <label class="drop" id="drop"><input type="file" id="files" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple class="sr">
+            <b style="color:#fff">Toca o arrastra fotos / videos aquí</b><br><span class="muted small">JPG, PNG, WEBP, MP4, WEBM · máx. 100 MB c/u</span></label>
+          <div class="thumbs" id="thumbs"></div>
+          <div><label class="label" for="caption">Descripción (opcional)</label><textarea class="input" id="caption" maxlength="2000"></textarea></div>
+          <div><label class="label" for="when">Fecha de publicación</label><input class="input" id="when" type="datetime-local">
+            <p class="hint">Déjalo vacío para publicar ahora. Si pones una fecha futura, se publica sola en ese momento.</p></div>
+          <label class="check"><input type="checkbox" id="free"><span>Publicación gratis (la ven usuarios registrados sin suscripción). Úsalo como “muestra”.</span></label>
+          <div class="progress hidden" id="prog"><i></i></div>
+          <div id="fp-err"></div>
+          <button class="btn btn-primary btn-block" type="submit">Publicar</button>
+        </form>
+      </div>
+      <div class="card pad">
+        <h2 style="font-size:1.15rem;margin-bottom:.4rem">Resumen</h2>
+        <p class="muted small">Suscriptores activos: <b style="color:#fff">${subs ?? "—"}</b> · Ingreso mensual estimado: <b style="color:#fff">${mxn((subs ?? 0) * CONFIG.priceMxn)}</b></p>
+        <p class="muted small">Las imágenes de vista previa se generan difuminadas automáticamente al subir. El archivo original queda en un almacenamiento privado al que solo acceden suscriptores.</p>
+        <div class="alert alert-warn small">Recuerda: todo el contenido debe mostrar a la modelo claramente como adulta y no debe parecerse a ninguna persona real.</div>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.15rem;margin:2.5rem 0 1rem">Publicaciones</h2>
+    <div class="stack" id="plist">${(posts ?? []).map((p) => `
+      <div class="card pad row" style="align-items:flex-start">
+        <div class="row" style="gap:6px">${p.post_media.slice(0, 4).map((m) => `<img src="${esc(previewUrl(m.preview_path))}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">`).join("")}</div>
+        <div class="grow" style="min-width:180px">
+          <p style="margin:0;color:#fff">${esc(p.caption || "Sin descripción")}</p>
+          <p class="muted xs" style="margin:.2rem 0 0">${fdate(p.published_at)} · ${p.post_media.length} archivo(s) ${p.is_free ? "· <b style='color:var(--rose-2)'>Gratis</b>" : ""} ${new Date(p.published_at) > new Date() ? "· <b style='color:var(--gold)'>Programada</b>" : ""}</p>
+        </div>
+        <button class="btn btn-danger btn-sm" data-del="${esc(p.id)}">Eliminar</button>
+      </div>`).join("") || `<p class="muted">Aún no hay publicaciones.</p>`}
+    </div>
+  </section>`;
+
+  let selected = [];
+  const input = $("#files"), drop = $("#drop"), thumbs = $("#thumbs");
+  const showThumbs = () => {
+    thumbs.innerHTML = selected.map((f, i) => `<div>${f.type.startsWith("image/") ? `<img src="${URL.createObjectURL(f)}" alt="">` : `<span class="kind" style="position:absolute;inset:auto auto 6px 6px">▶ ${esc(f.name.slice(0, 12))}</span>`}</div>`).join("");
+  };
+  const addFiles = (list) => {
+    for (const f of list) {
+      if (!["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm"].includes(f.type)) { toast(`Formato no permitido: ${f.name}`); continue; }
+      if (f.size > 100 * 1024 * 1024) { toast(`Archivo muy grande: ${f.name}`); continue; }
+      selected.push(f);
+    }
+    showThumbs();
+  };
+  input.addEventListener("change", () => addFiles(input.files));
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("drag"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("drag"); addFiles(e.dataTransfer.files); });
+
+  $("#fp").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget.querySelector("button[type=submit]"), err = $("#fp-err"), prog = $("#prog"), bar = prog.firstElementChild;
+    if (!selected.length) return showError(err, "Agrega al menos un archivo.");
+    showError(err, ""); setBusy(btn, true, "Subiendo…"); prog.classList.remove("hidden");
+    const postId = crypto.randomUUID();
+    const uploaded = [];
+    try {
+      const when = $("#when").value;
+      const { error: pErr } = await sb.from("posts").insert({
+        id: postId, caption: $("#caption").value.trim() || null, is_free: $("#free").checked,
+        published_at: when ? new Date(when).toISOString() : new Date().toISOString(),
+      });
+      if (pErr) throw pErr;
+
+      for (let i = 0; i < selected.length; i++) {
+        const file = selected[i];
+        const kind = file.type.startsWith("video/") ? "video" : "image";
+        const id = crypto.randomUUID();
+        const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "video/mp4": "mp4", "video/webm": "webm" }[file.type];
+        const path = `${postId}/${id}.${ext}`, prevPath = `${postId}/${id}.jpg`;
+        const { blob: prevBlob, width, height } = await makeBlurPreview(file, kind);
+
+        const up1 = await sb.storage.from("content").upload(path, file, { contentType: file.type, upsert: false });
+        if (up1.error) throw up1.error;
+        uploaded.push(["content", path]);
+        const up2 = await sb.storage.from("previews").upload(prevPath, prevBlob, { contentType: "image/jpeg", upsert: false });
+        if (up2.error) throw up2.error;
+        uploaded.push(["previews", prevPath]);
+
+        const { error: mErr } = await sb.from("post_media").insert({ post_id: postId, storage_path: path, preview_path: prevPath, kind, width, height, sort: i });
+        if (mErr) throw mErr;
+        bar.style.width = `${Math.round(((i + 1) / selected.length) * 100)}%`;
+      }
+      toast("¡Publicado!"); render();
+    } catch (ex) {
+      console.error(ex);
+      // Deshace lo subido para no dejar archivos sueltos.
+      for (const b of ["content", "previews"]) {
+        const paths = uploaded.filter(([bk]) => bk === b).map(([, p]) => p);
+        if (paths.length) await sb.storage.from(b).remove(paths);
+      }
+      await sb.from("posts").delete().eq("id", postId);
+      setBusy(btn, false); prog.classList.add("hidden");
+      showError(err, "No se pudo publicar: " + (ex.message || "error desconocido"));
+    }
+  });
+
+  $$("[data-del]").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm("¿Eliminar esta publicación y sus archivos? No se puede deshacer.")) return;
+    const post = posts.find((p) => p.id === b.dataset.del);
+    setBusy(b, true);
+    const c = post.post_media.map((m) => m.storage_path), pv = post.post_media.map((m) => m.preview_path);
+    if (c.length) await sb.storage.from("content").remove(c);
+    if (pv.length) await sb.storage.from("previews").remove(pv);
+    const { error } = await sb.from("posts").delete().eq("id", post.id);
+    if (error) { setBusy(b, false); return toast("No se pudo eliminar"); }
+    toast("Publicación eliminada"); render();
+  }));
+}
+
+/** Genera una vista previa pequeña y muy difuminada (lo único público). */
+async function makeBlurPreview(file, kind) {
+  let source, width, height;
+  const url = URL.createObjectURL(file);
+  try {
+    if (kind === "image") {
+      source = await createImageBitmap(file);
+      width = source.width; height = source.height;
+    } else {
+      const v = document.createElement("video");
+      v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = () => rej(new Error("No se pudo leer el video")); });
+      v.currentTime = Math.min(1, (v.duration || 2) / 2);
+      await new Promise((res) => { v.onseeked = res; });
+      source = v; width = v.videoWidth; height = v.videoHeight;
+    }
+    // Paso 1: reducir a 24 px de ancho (destruye el detalle).
+    const sw = 24, sh = Math.max(1, Math.round((height / width) * sw));
+    const small = document.createElement("canvas"); small.width = sw; small.height = sh;
+    small.getContext("2d").drawImage(source, 0, 0, sw, sh);
+    // Paso 2: ampliar a 480 px con desenfoque.
+    const W = 480, H = Math.round((height / width) * W);
+    const big = document.createElement("canvas"); big.width = W; big.height = H;
+    const ctx = big.getContext("2d");
+    ctx.filter = "blur(14px)"; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(small, -20, -20, W + 40, H + 40);
+    const blob = await new Promise((r) => big.toBlob(r, "image/jpeg", 0.7));
+    return { blob, width, height };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// ─── Legales ───────────────────────────────────────────────────────────
+const LEGAL = {
+  terminos: ["Términos y condiciones", `
+    <p>Al crear una cuenta en ${esc(CONFIG.name)} aceptas estos términos.</p>
+    <h2>1. Mayoría de edad</h2><p>Debes tener al menos 18 años y la mayoría de edad legal en tu país. Si descubrimos que una cuenta pertenece a un menor, la cancelamos sin reembolso.</p>
+    <h2>2. Naturaleza del contenido</h2><p>${esc(CONFIG.name)} es un personaje de la marca. El contenido se produce con herramientas digitales, incluida inteligencia artificial, y no representa a ninguna persona real. Consulta el <a href="#/legal/aviso-ia" style="color:var(--rose-2)">Aviso legal</a>.</p>
+    <h2>3. Suscripción y pagos</h2><p>La suscripción cuesta ${mxn(CONFIG.priceMxn)} y da ${CONFIG.periodDays} días de acceso desde que se aprueba el pago. No se renueva automáticamente. Los pagos se procesan con Mercado Pago; no guardamos datos de tu tarjeta.</p>
+    <h2>4. Uso permitido</h2><p>El contenido es para tu uso personal dentro del sitio. Está prohibido descargarlo, grabarlo, compartirlo, revenderlo o publicarlo en otros lugares. El contenido lleva marcas de agua con tu usuario.</p>
+    <h2>5. Cuentas</h2><p>Tu cuenta es personal. No compartas tu contraseña. Podemos suspender cuentas que incumplan estos términos.</p>
+    <h2>6. Cambios</h2><p>Podemos actualizar estos términos; publicaremos la versión vigente en esta página.</p>
+    <h2>7. Contacto</h2><p>${esc(CONFIG.supportEmail)}</p>`],
+  privacidad: ["Aviso de privacidad", `
+    <p>Tratamos tus datos conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
+    <h2>Datos que recopilamos</h2><ul><li>Correo electrónico y nombre de usuario.</li><li>Fecha de nacimiento (solo para verificar mayoría de edad).</li><li>Historial de pagos (monto, fecha, método). No recibimos ni guardamos datos de tarjetas.</li></ul>
+    <h2>Para qué los usamos</h2><p>Para crear y proteger tu cuenta, verificar tu edad, darte acceso al contenido y atender aclaraciones de pago.</p>
+    <h2>Con quién los compartimos</h2><p>Con Supabase (alojamiento de la cuenta y base de datos) y Mercado Pago (procesamiento del pago). No vendemos tus datos.</p>
+    <h2>Tus derechos ARCO</h2><p>Puedes pedir acceso, rectificación, cancelación u oposición escribiendo a ${esc(CONFIG.supportEmail)}.</p>`],
+  reembolsos: ["Política de reembolsos", `
+    <p>Por tratarse de contenido digital al que se accede de inmediato, los pagos no son reembolsables una vez activado el acceso, salvo en estos casos:</p>
+    <ul><li>Cobro duplicado.</li><li>Pagaste y el acceso no se activó en 24 horas.</li><li>Fallo técnico del sitio que te impidió ver el contenido.</li></ul>
+    <p>Escríbenos a ${esc(CONFIG.supportEmail)} con tu correo de registro y el número de operación de Mercado Pago. Respondemos en un máximo de 72 horas.</p>
+    <p>Si haces un contracargo con tu banco, tu acceso se cancela automáticamente.</p>`],
+  "aviso-ia": ["Aviso legal", `
+    <p>El contenido visual de este sitio se produce con herramientas digitales, incluida inteligencia artificial.</p>
+    <ul><li>${esc(CONFIG.name)} es un personaje de la marca y se representa siempre como adulta (mayor de 18 años).</li>
+    <li>El contenido no está basado en la imagen de ninguna persona real; cualquier parecido es coincidencia.</li></ul>
+    <p>Si crees que algún contenido se parece a una persona real o infringe derechos, repórtalo a ${esc(CONFIG.supportEmail)} y lo revisaremos de inmediato.</p>`],
+};
+function viewLegal(key) {
+  const [title, html] = LEGAL[key];
+  app.innerHTML = `<section class="wrap section legal"><h1 class="section-title">${title}</h1>
+    <p class="muted xs">Última actualización: ${fdate("2026-11-24T12:00:00")}</p>${html}</section>`;
+}
+function viewNotFound() {
+  return `<section class="wrap narrow section center"><h1 class="display" style="font-size:3rem">404</h1><p class="muted">Esta página no existe.</p><a class="btn btn-ghost" href="#/">Volver al inicio</a></section>`;
+}
+
+// ─── Arranque ──────────────────────────────────────────────────────────
+function initChrome() {
+  $("#logo").innerHTML = `${esc(CONFIG.name)}<span>.</span>`;
+  $("#foot-name").textContent = CONFIG.name;
+  $("#foot-copy").textContent = `© ${new Date().getFullYear()} ${CONFIG.name}. Todos los derechos reservados.`;
+  $("#foot-mail").href = `mailto:${CONFIG.supportEmail}`;
+  document.title = `${CONFIG.name} · Contenido exclusivo`;
+
+  const gate = $("#gate");
+  let ok = false;
+  try { ok = localStorage.getItem("age_ok_v1") === "1"; } catch { /* sin almacenamiento */ }
+  if (!ok) { gate.classList.remove("hidden"); document.body.style.overflow = "hidden"; $("#gate-ok").focus(); }
+  $("#gate-ok").addEventListener("click", () => {
+    try { localStorage.setItem("age_ok_v1", "1"); } catch { /* sin almacenamiento */ }
+    gate.classList.add("hidden"); document.body.style.overflow = "";
+  });
+}
+
+async function boot() {
+  initChrome();
+
+  // Regreso desde Mercado Pago (?pago=...) → vista de pago, limpiando la URL.
+  const q = new URLSearchParams(location.search);
+  const pago = q.get("pago");
+  let recovery = false, booted = false;
+  sb.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") { recovery = true; if (booted) go("#/nueva-clave"); }
+    if (event === "SIGNED_OUT" && booted) { loadSession().then(render); }
+  });
+
+  await loadSession(); // también procesa ?code= de confirmación o recuperación
+
+  let target = location.hash || "#/";
+  if (pago) target = `#/pago?estado=${encodeURIComponent(pago)}`;
+  if (recovery) target = "#/nueva-clave";
+  if (pago || recovery || q.has("code") || location.search) history.replaceState(null, "", location.pathname + target);
+  if (q.has("code") && !recovery && state.user) toast("¡Correo confirmado! Ya puedes suscribirte.");
+
+  booted = true;
+  window.addEventListener("hashchange", render);
+  render();
+}
+
+boot();
+</script>
+</body>
+</html>
