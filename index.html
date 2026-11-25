@@ -272,6 +272,15 @@
   .lb-btn:hover { background: rgb(255 255 255 / .22); }
   .lb-close { top: 14px; right: 14px; } .lb-prev { left: 14px; top: 50%; transform: translateY(-50%); } .lb-next { right: 14px; top: 50%; transform: translateY(-50%); }
   .lb-count { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); color: #fff; font-size: .85rem; font-weight: 700; opacity: .8; }
+  .lightbox { overflow: hidden; }
+  .lightbox img.zoomable { touch-action: none; cursor: zoom-in; transform-origin: center center; will-change: transform; transition: transform .18s ease-out; }
+  .lightbox img.zoomable.zoomed { cursor: grab; }
+  .lightbox img.zoomable.dragging { cursor: grabbing; transition: none; }
+  .lb-zoom { position: absolute; z-index: 2; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: .4rem; background: rgb(255 255 255 / .12); border-radius: 999px; padding: 4px; backdrop-filter: blur(8px); }
+  .lb-zoom button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: transparent; color: #fff; font-size: 1.3rem; font-weight: 700; cursor: pointer; display: grid; place-items: center; }
+  .lb-zoom button:hover { background: rgb(255 255 255 / .16); }
+  .lb-zoom span { color: #fff; font-size: .78rem; font-weight: 700; min-width: 3.2rem; text-align: center; }
   .protected { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .protected img, .protected video { -webkit-user-drag: none; }
 
@@ -870,8 +879,103 @@ async function toggleLike(btn) {
   }
 }
 
+/**
+ * Zoom para una imagen: pellizco (2 dedos), doble toque/clic, rueda del mouse y arrastre.
+ * Devuelve controles para los botones +/− y para saber si está ampliada.
+ */
+function attachZoom(img, onChange) {
+  const MIN = 1, MAX = 5;
+  let s = 1, tx = 0, ty = 0;
+  const pts = new Map();
+  let pinch = null, pan = null, lastTap = 0, moved = false;
+  let gesture = false; // hubo pellizco/arrastre en este toque (para no cambiar de foto)
+
+  const clamp = () => {
+    const w = img.offsetWidth, h = img.offsetHeight;
+    const mx = Math.max(0, (w * s - w) / 2), my = Math.max(0, (h * s - h) / 2);
+    tx = Math.min(mx, Math.max(-mx, tx)); ty = Math.min(my, Math.max(-my, ty));
+  };
+  const apply = (animate = true) => {
+    if (s <= 1.001) { s = 1; tx = 0; ty = 0; }
+    clamp();
+    img.classList.toggle("dragging", !animate);
+    img.classList.toggle("zoomed", s > 1);
+    img.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    onChange?.(s);
+  };
+  // Acerca/aleja manteniendo fijo el punto (px, py) de la pantalla.
+  const zoomAt = (ns, px, py, animate = true) => {
+    ns = Math.min(MAX, Math.max(MIN, ns));
+    const r = img.getBoundingClientRect();
+    const cx = r.left + r.width / 2 - tx, cy = r.top + r.height / 2 - ty;
+    const k = ns / s;
+    tx = (px - cx) - ((px - cx) - tx) * k;
+    ty = (py - cy) - ((py - cy) - ty) * k;
+    s = ns; apply(animate);
+  };
+  const center = () => { const r = img.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+
+  img.addEventListener("pointerdown", (e) => {
+    try { img.setPointerCapture(e.pointerId); } catch { /* algunos navegadores no lo permiten */ }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    moved = false;
+    if (pts.size === 1) gesture = false;
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), s, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+      pan = null; gesture = true;
+    } else if (pts.size === 1 && s > 1) {
+      pan = { x: e.clientX, y: e.clientY, tx, ty };
+    }
+  });
+  img.addEventListener("pointermove", (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const p = pts.get(e.pointerId);
+    if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 6) moved = true;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt(pinch.s * (d / pinch.d), (a.x + b.x) / 2, (a.y + b.y) / 2, false);
+    } else if (pan && s > 1) {
+      tx = pan.tx + (e.clientX - pan.x); ty = pan.ty + (e.clientY - pan.y);
+      gesture = true; apply(false);
+    }
+  });
+  const end = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (pts.size < 2) pinch = null;
+    if (pts.size === 1 && s > 1) { const [p] = [...pts.values()]; pan = { x: p.x, y: p.y, tx, ty }; }
+    if (pts.size === 0) {
+      pan = null; apply(true);
+      // Doble toque / doble clic: alterna entre normal y 2.5x en el punto tocado.
+      if (!moved && e.type === "pointerup") {
+        const now = Date.now();
+        if (now - lastTap < 300) { zoomAt(s > 1 ? 1 : 2.5, e.clientX, e.clientY); lastTap = 0; gesture = true; }
+        else lastTap = now;
+      }
+    }
+  };
+  img.addEventListener("pointerup", end);
+  img.addEventListener("pointercancel", end);
+  img.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    zoomAt(s * Math.exp(-e.deltaY * 0.0022), e.clientX, e.clientY, false);
+  }, { passive: false });
+  img.addEventListener("dblclick", (e) => e.preventDefault());
+
+  return {
+    zoomed: () => s > 1,
+    busy: () => gesture || pts.size > 0,
+    by: (f) => { const [x, y] = center(); zoomAt(s * f, x, y); },
+    reset: () => { s = 1; tx = 0; ty = 0; apply(); },
+  };
+}
+
 function openLightbox(index) {
   let i = index;
+  let zoom = null;
   const box = document.createElement("div");
   box.className = "lightbox protected";
   box.setAttribute("role", "dialog"); box.setAttribute("aria-modal", "true");
@@ -884,19 +988,38 @@ function openLightbox(index) {
       ${i < lbItems.length - 1 ? `<button class="lb-btn lb-next" aria-label="Siguiente">${ic("right")}</button>` : ""}
       <div class="stage">${it.kind === "video"
         ? `<video src="${esc(it.url)}" controls autoplay playsinline controlslist="nodownload noplaybackrate" disablepictureinpicture></video>`
-        : `<img src="${esc(it.url)}" alt="" draggable="false">`}</div>`;
+        : `<img class="zoomable" src="${esc(it.url)}" alt="" draggable="false">`}</div>
+      ${it.kind === "video" ? "" : `<div class="lb-zoom">
+        <button type="button" data-zoom="out" aria-label="Alejar">−</button><span data-zoom-level>100%</span>
+        <button type="button" data-zoom="in" aria-label="Acercar">+</button></div>`}`;
+    const img = box.querySelector("img.zoomable");
+    zoom = img ? attachZoom(img, (s) => { const l = box.querySelector("[data-zoom-level]"); if (l) l.textContent = `${Math.round(s * 100)}%`; }) : null;
   };
   const move = (d) => { const n = i + d; if (n >= 0 && n < lbItems.length) { i = n; draw(); } };
   const close = () => { box.remove(); document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  const onKey = (e) => { if (e.key === "Escape") close(); if (e.key === "ArrowRight") move(1); if (e.key === "ArrowLeft") move(-1); };
+  const onKey = (e) => {
+    if (e.key === "Escape") { if (zoom?.zoomed()) zoom.reset(); else close(); }
+    if (e.key === "+" || e.key === "=") zoom?.by(1.5);
+    if (e.key === "-") zoom?.by(1 / 1.5);
+    if (zoom?.zoomed()) return; // con zoom, las flechas no cambian de foto
+    if (e.key === "ArrowRight") move(1); if (e.key === "ArrowLeft") move(-1);
+  };
   box.addEventListener("click", (e) => {
-    if (e.target.closest(".lb-close") || e.target === box || e.target.classList.contains("stage")) return close();
+    const z = e.target.closest("[data-zoom]");
+    if (z) return zoom?.by(z.dataset.zoom === "in" ? 1.5 : 1 / 1.5);
+    if (e.target.closest(".lb-close")) return close();
+    if (e.target === box || e.target.classList.contains("stage")) { if (zoom?.zoomed()) return zoom.reset(); return close(); }
     if (e.target.closest(".lb-prev")) return move(-1);
     if (e.target.closest(".lb-next")) return move(1);
   });
+  // Deslizar para cambiar de foto, solo si no está ampliada ni hubo pellizco.
   let x0 = null;
-  box.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
-  box.addEventListener("touchend", (e) => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) move(dx < 0 ? 1 : -1); x0 = null; });
+  box.addEventListener("touchstart", (e) => { x0 = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+  box.addEventListener("touchend", (e) => {
+    if (x0 === null || e.touches.length > 0) { if (e.touches.length === 0) x0 = null; return; }
+    if (zoom && (zoom.zoomed() || zoom.busy())) { x0 = null; return; }
+    const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) move(dx < 0 ? 1 : -1); x0 = null;
+  });
   box.addEventListener("contextmenu", (e) => e.preventDefault());
   document.addEventListener("keydown", onKey);
   document.body.style.overflow = "hidden";
