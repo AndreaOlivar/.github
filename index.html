@@ -597,7 +597,8 @@ function renderChrome() {
   const items = [
     ["/", "home", "Inicio"],
     ["/multimedia", "image", "Multimedia"],
-    state.user ? ["/cuenta", "user", "Mi cuenta"] : ["/entrar", "login", "Entrar"],
+    // El botón "Entrar" lleva al registro; desde ahí hay un enlace para iniciar sesión.
+    state.user ? ["/cuenta", "user", "Mi cuenta"] : ["/registro", "login", "Entrar"],
     ...(state.isAdmin ? [["/admin", "shield", "Admin"]] : []),
   ];
   const subCta = state.active ? "" : `<button class="btn btn-accent btn-block" data-subscribe>Suscribirme · ${mxn(CONFIG.priceMxn)}</button>`;
