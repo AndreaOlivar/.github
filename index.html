@@ -462,6 +462,16 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const app = $("#app");
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Todos los precios del sitio pasan por aquí: "$79 MXN".
+// Nombre de usuario libre: 1 a 30 caracteres de cualquier tipo (sin caracteres invisibles de control).
+const cleanUsername = (s) => String(s ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
+const usernameError = (s) => {
+  const n = Array.from(s).length;
+  if (n < 1) return "Escribe un nombre de usuario.";
+  if (n > 30) return "El nombre de usuario puede tener máximo 30 caracteres.";
+  return "";
+};
+// Primera letra/emoji de un nombre (funciona con acentos y emojis).
+const initialOf = (s) => (Array.from(String(s ?? "").trim())[0] ?? "?").toUpperCase();
 const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n) + " MXN";
 const num = (n) => new Intl.NumberFormat("es-MX", { notation: n >= 10000 ? "compact" : "standard" }).format(n ?? 0);
 const fdate = (d) => new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
@@ -519,7 +529,9 @@ function authErrorMsg(e) {
   if (m.includes("invalid login")) return "Correo o contraseña incorrectos.";
   if (m.includes("already registered")) return "Ese correo ya tiene una cuenta. Inicia sesión.";
   if (m.includes("database error")) return "No se pudo crear la cuenta: revisa que seas mayor de 18, hayas aceptado los términos y que el nombre de usuario no esté ocupado.";
-  if (m.includes("password")) return "La contraseña debe tener al menos 8 caracteres.";
+  if (m.includes("ocupado")) return "Ese nombre de usuario ya está ocupado. Prueba con otro.";
+  if (m.includes("máximo 30")) return "El nombre de usuario puede tener máximo 30 caracteres.";
+  if (m.includes("password")) return "La contraseña debe tener al menos 6 caracteres.";
   if (m.includes("rate limit") || m.includes("security purposes")) return "Demasiados intentos. Espera un momento e intenta de nuevo.";
   return e?.message || "Ocurrió un error. Intenta de nuevo.";
 }
@@ -534,7 +546,7 @@ const creator = () => ({
 });
 const avatarImg = (cls = "avatar-sm") => {
   const c = creator();
-  return c.avatar ? `<img class="${cls}" src="${esc(c.avatar)}" alt="${esc(c.name)}">` : `<div class="${cls} avatar-ph">${esc(c.name.slice(0, 1))}</div>`;
+  return c.avatar ? `<img class="${cls}" src="${esc(c.avatar)}" alt="${esc(c.name)}">` : `<div class="${cls} avatar-ph">${esc(initialOf(c.name))}</div>`;
 };
 
 async function loadSession() {
@@ -591,17 +603,17 @@ function renderChrome() {
   const subCta = state.active ? "" : `<button class="btn btn-accent btn-block" data-subscribe>Suscribirme · ${mxn(CONFIG.priceMxn)}</button>`;
 
   $("#side").innerHTML = `
-    <a class="brand" href="#/"><div class="brand-dot">${esc(c.name.slice(0, 1))}</div><span>${esc(c.name)}</span></a>
+    <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span></a>
     <nav class="nav">${items.map(([p, i, l]) => `<a class="nav-item ${on(p)}" href="#${p}" title="${l}">${ic(i)}<span>${l}</span></a>`).join("")}</nav>
     <div class="side-foot">
       <div class="side-cta">${subCta}</div>
-      ${state.user ? `<a class="me-chip" href="#/cuenta" title="Mi cuenta"><div class="initial">${esc((state.profile?.username ?? "?").slice(0, 1).toUpperCase())}</div>
+      ${state.user ? `<a class="me-chip" href="#/cuenta" title="Mi cuenta"><div class="initial">${esc(initialOf(state.profile?.username))}</div>
         <div class="grow side-cta"><div class="bold small">${esc(state.profile?.username ?? "")}</div><div class="xs mute">${state.active ? "Suscriptor" : "Sin suscripción"}</div></div></a>`
       : `<a class="btn btn-line btn-block side-cta" href="#/registro">Crear cuenta</a>`}
     </div>`;
 
   $("#topbar").innerHTML = `
-    <a class="brand" href="#/"><div class="brand-dot">${esc(c.name.slice(0, 1))}</div><span>${esc(c.name)}</span>${VERIFIED}</a>
+    <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span>${VERIFIED}</a>
     ${state.active ? `<span class="pill pill-ok">${ic("check", "ic-xs")} Suscrito</span>`
       : state.user ? `<button class="btn btn-accent btn-sm" data-subscribe>Suscribirme</button>`
       : `<a class="btn btn-accent btn-sm" href="#/registro">Crear cuenta</a>`}`;
@@ -1111,7 +1123,7 @@ function authShell(title, subtitle, body) {
   return `<div class="auth"><div class="auth-top">${avatarImg("avatar-xl")}<h1>${title}</h1><p>${subtitle}</p></div><div class="card pad">${body}</div></div>`;
 }
 const pwField = (id, label, auto) => `<div><label class="label" for="${id}">${label}</label>
-  <div class="pw"><input class="input" id="${id}" name="${id}" type="password" minlength="8" required autocomplete="${auto}">
+  <div class="pw"><input class="input" id="${id}" name="${id}" type="password" minlength="6" required autocomplete="${auto}">
   <button type="button" data-toggle-pw="${id}" aria-label="Mostrar contraseña">${ic("eye", "ic-sm")}</button></div></div>`;
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-toggle-pw]");
@@ -1126,8 +1138,8 @@ async function viewRegister() {
   app.innerHTML = authShell(`Únete a ${esc(creator().name)}`, "Crea tu cuenta gratis en segundos.", `
     <form id="f" class="stack" novalidate>
       <div><label class="label" for="username">Nombre de usuario</label>
-        <input class="input" id="username" name="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_]{3,20}" autocomplete="username" placeholder="tu_usuario">
-        <p class="hint">3 a 20 caracteres: letras, números o guion bajo.</p></div>
+        <input class="input" id="username" name="username" required maxlength="60" autocomplete="username" placeholder="Como quieras llamarte">
+        <p class="hint">De 1 a 30 caracteres. Puedes usar letras, números, espacios, símbolos y emojis.</p></div>
       <div><label class="label" for="email">Correo electrónico</label>
         <input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></div>
       ${pwField("password", "Contraseña", "new-password")}
@@ -1143,9 +1155,10 @@ async function viewRegister() {
     e.preventDefault();
     const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button[type=submit]");
     const d = Object.fromEntries(new FormData(f));
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(d.username)) return showError(err, "El nombre de usuario no es válido.");
+    d.username = cleanUsername(d.username);
+    const uErr = usernameError(d.username); if (uErr) return showError(err, uErr);
     if (!/^\S+@\S+\.\S+$/.test(d.email)) return showError(err, "Escribe un correo válido.");
-    if ((d.password || "").length < 8) return showError(err, "La contraseña debe tener al menos 8 caracteres.");
+    if ((d.password || "").length < 6) return showError(err, "La contraseña debe tener al menos 6 caracteres.");
     if (!d.terms) return showError(err, "Debes confirmar que eres mayor de 18 años y aceptar los términos.");
     showError(err, ""); setBusy(btn, true, "Creando cuenta…");
     const { data, error } = await sb.auth.signUp({
@@ -1199,7 +1212,7 @@ async function viewNewPassword() {
     e.preventDefault();
     const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button[type=submit]");
     const d = Object.fromEntries(new FormData(f));
-    if (d.p1.length < 8) return showError(err, "Mínimo 8 caracteres.");
+    if (d.p1.length < 6) return showError(err, "Mínimo 6 caracteres.");
     if (d.p1 !== d.p2) return showError(err, "Las contraseñas no coinciden.");
     setBusy(btn, true, "Guardando…");
     const { error } = await sb.auth.updateUser({ password: d.p1 });
@@ -1225,7 +1238,7 @@ async function viewAccount(_p, alive) {
   app.innerHTML = `
   <div class="page">
     <div class="row" style="gap:.9rem;margin-bottom:1.4rem">
-      <div class="initial" style="width:56px;height:56px;font-size:1.3rem">${esc((state.profile?.username ?? "?").slice(0, 1).toUpperCase())}</div>
+      <div class="initial" style="width:56px;height:56px;font-size:1.3rem">${esc(initialOf(state.profile?.username))}</div>
       <div class="grow"><h1 class="page-h">${esc(state.profile?.username ?? "")}</h1><p class="small mute">${esc(state.user.email)}</p></div>
     </div>
     <div class="grid-2">
@@ -1263,7 +1276,8 @@ async function viewAccount(_p, alive) {
           <h2 class="section-h" style="margin-bottom:1rem">Perfil</h2>
           <form id="fu" class="stack">
             <div><label class="label" for="un">Nombre de usuario</label>
-              <input class="input" id="un" name="username" value="${esc(state.profile?.username ?? "")}" pattern="[A-Za-z0-9_]{3,20}" required></div>
+              <input class="input" id="un" name="username" value="${esc(state.profile?.username ?? "")}" maxlength="60" required>
+              <p class="hint">De 1 a 30 caracteres, cualquier tipo.</p></div>
             <div id="fu-err"></div>
             <button class="btn btn-line btn-block" type="submit">Guardar cambios</button>
           </form>
@@ -1282,8 +1296,8 @@ async function viewAccount(_p, alive) {
   $("#fu").addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = e.currentTarget.querySelector("button"), err = $("#fu-err");
-    const username = new FormData(e.currentTarget).get("username").trim();
-    if (!/^[A-Za-z0-9_]{3,20}$/.test(username)) return showError(err, "Nombre de usuario no válido.");
+    const username = cleanUsername(new FormData(e.currentTarget).get("username"));
+    const uErr = usernameError(username); if (uErr) return showError(err, uErr);
     setBusy(btn, true);
     const { error } = await sb.from("profiles").update({ username }).eq("id", state.user.id);
     setBusy(btn, false);
@@ -1481,7 +1495,7 @@ async function adminOverview(alive) {
       <div class="admin-grid two">
         <div class="card pad"><div class="row between"><h2 class="section-h">Conectados recientemente</h2><span class="xs mute">últimos 15 min</span></div>
           <div style="margin-top:.5rem">${o.online_list.length ? o.online_list.map((u) => { const pr = presence(u.last_seen_at); return `
-            <div class="list-row click" data-user="${esc(u.id)}"><div class="initial" style="width:32px;height:32px;font-size:.8rem">${esc((u.username || "?")[0].toUpperCase())}</div>
+            <div class="list-row click" data-user="${esc(u.id)}"><div class="initial" style="width:32px;height:32px;font-size:.8rem">${esc(initialOf(u.username))}</div>
               <div class="grow"><div class="small bold">${esc(u.username)}</div><div class="xs mute row" style="gap:.35rem"><i class="dot ${pr.cls}"></i>${esc(pr.text)}</div></div>
               ${u.premium ? `<span class="pill pill-ok">Premium</span>` : `<span class="pill pill-off">Gratis</span>`}</div>`; }).join("")
             : `<p class="small mute" style="padding:.8rem 0">Nadie conectado en este momento.</p>`}</div></div>
@@ -1527,7 +1541,7 @@ async function adminUsers(alive) {
         <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Registro</th></tr></thead>
         <tbody>${res.rows.map((u) => { const pr = presence(u.last_seen_at); return `
           <tr data-user="${esc(u.id)}">
-            <td><div class="u-cell"><div class="initial">${esc((u.username || "?")[0].toUpperCase())}</div><div style="min-width:0">
+            <td><div class="u-cell"><div class="initial">${esc(initialOf(u.username))}</div><div style="min-width:0">
               <div class="u-name">${esc(u.username)}${u.is_admin ? `<span class="tag tag-admin">Admin</span>` : ""}${u.is_banned ? `<span class="tag tag-ban">Suspendido</span>` : ""}</div>
               <div class="u-mail">${esc(u.email)}</div></div></div></td>
             <td><span class="row" style="gap:.45rem"><i class="dot ${pr.cls}"></i><span class="small">${esc(pr.text)}</span></span></td>
@@ -1582,7 +1596,7 @@ async function openUserDrawer(id, onChange) {
     const subActive = u.sub_end && new Date(u.sub_end) > new Date();
     drawer.innerHTML = `
       <div class="drawer-head">
-        <div class="initial" style="width:44px;height:44px">${esc((u.username || "?")[0].toUpperCase())}</div>
+        <div class="initial" style="width:44px;height:44px">${esc(initialOf(u.username))}</div>
         <div class="grow"><div class="u-name" style="font-size:1.05rem">${esc(u.username)}${u.is_admin ? `<span class="tag tag-admin">Admin</span>` : ""}</div>
           <div class="u-mail" style="max-width:none">${esc(u.email)}</div></div>
         <button class="icon-btn" data-close aria-label="Cerrar">${ic("close", "ic-sm")}</button>
