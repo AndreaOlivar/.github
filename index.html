@@ -1247,9 +1247,18 @@ async function viewPayment(params, alive) {
   app.innerHTML = authShell("¡Gracias por tu pago!", "Estamos activando tu acceso…", `
     <div class="row" id="pstatus"><span class="spinner"></span><span class="small mute">Confirmando con Mercado Pago. Esto toma unos segundos.</span></div>`);
   const before = state.sub?.current_period_end;
+  const pid = params.get("pid");
+  // Segundo camino: el servidor verifica este pago directamente con Mercado Pago
+  // (por si el aviso automático de Mercado Pago tarda o falla).
+  const confirm = async () => {
+    if (!pid) return;
+    try { await sb.functions.invoke("confirm-payment", { method: "POST", body: { payment_id: pid } }); } catch { /* el aviso automático sigue funcionando */ }
+  };
+  await confirm();
   for (let i = 0; i < 20 && alive(); i++) {
     await loadSession();
     if (state.active && state.sub?.current_period_end !== before) break;
+    if (i === 5 || i === 12) await confirm();
     await new Promise((r) => setTimeout(r, 3000));
   }
   if (!alive()) return;
@@ -1576,7 +1585,9 @@ async function boot() {
   });
   await Promise.all([loadSession(), loadSite()]);
   let target = location.hash || "#/";
-  if (pago) target = `#/pago?estado=${encodeURIComponent(pago)}`;
+  // Mercado Pago regresa con ?pago=…&payment_id=… (o collection_id).
+  const payId = q.get("payment_id") || q.get("collection_id") || "";
+  if (pago) target = `#/pago?estado=${encodeURIComponent(pago)}${/^\d{1,20}$/.test(payId) ? `&pid=${payId}` : ""}`;
   if (recovery) target = "#/nueva-clave";
   if (pago || recovery || location.search) history.replaceState(null, "", location.pathname + target);
   booted = true;
