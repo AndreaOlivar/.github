@@ -337,6 +337,56 @@
   .admin-post .thumbs-row img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--bg-3); }
   .brand-edit .cover { height: clamp(110px, 30vw, 200px); border-radius: 14px; }
   .brand-edit .avatar-xl { margin: -44px 0 0 16px; position: relative; z-index: 2; }
+  /* ═══════════════ Panel admin ═══════════════ */
+  .admin-mode .right { display: none !important; }
+  @media (min-width: 1280px) { .admin-mode .shell { grid-template-columns: var(--side-w) minmax(0, 1fr); } }
+  .admin-mode #app { max-width: 1240px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .dot-on { background: #22c55e; box-shadow: 0 0 0 3px rgb(34 197 94 / .18); }
+  .dot-recent { background: #f59e0b; }
+  .dot-off { background: var(--bg-3); border: 1px solid var(--line); }
+  .chips { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .chip { padding: .42rem .85rem; border-radius: 999px; border: 1px solid var(--line); font: 700 .8rem var(--font); color: var(--text-2); background: var(--card); cursor: pointer; }
+  .chip.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .toolbar { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin-bottom: .9rem; }
+  .toolbar .input { min-height: 40px; padding: .5rem .85rem; }
+  .utable td, .utable th { white-space: nowrap; vertical-align: middle; }
+  .utable tbody tr { cursor: pointer; transition: background .12s; }
+  .utable tbody tr:hover { background: var(--bg-2); }
+  .u-cell { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+  .u-cell .initial { width: 36px; height: 36px; font-size: .85rem; }
+  .u-name { font-weight: 700; display: flex; align-items: center; gap: .35rem; }
+  .u-mail { font-size: .78rem; color: var(--mute); max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+  .tag { font-size: .65rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 6px; padding: .1rem .4rem; }
+  .tag-admin { background: var(--accent-soft); color: var(--accent); }
+  .tag-ban { background: var(--bad-soft); color: var(--bad); }
+  @media (max-width: 760px) { .hide-m { display: none; } }
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: 1rem; flex-wrap: wrap; }
+  .drawer-bg { position: fixed; inset: 0; z-index: 80; background: rgb(0 0 0 / .45); display: flex; justify-content: flex-end; }
+  .drawer { width: min(540px, 100%); height: 100%; background: var(--bg); overflow-y: auto; border-left: 1px solid var(--line); animation: slide .2s ease-out; }
+  @keyframes slide { from { transform: translateX(30px); opacity: 0; } }
+  .drawer-head { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--line); padding: 14px 16px; display: flex; align-items: center; gap: .75rem; }
+  .drawer-sec { padding: 16px; border-bottom: 1px solid var(--line); }
+  .drawer-sec h3 { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); margin-bottom: .8rem; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1rem; }
+  .info-grid span { display: block; font-size: .7rem; color: var(--mute); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .info-grid b { font-size: .88rem; font-weight: 600; overflow-wrap: anywhere; }
+  .chart { display: flex; align-items: flex-end; gap: 3px; height: 130px; padding-top: 8px; }
+  .chart i { flex: 1; min-height: 2px; border-radius: 4px 4px 0 0; background: var(--accent); opacity: .8; transition: opacity .15s; }
+  .chart i:hover { opacity: 1; }
+  .chart.green i { background: #22c55e; }
+  .chart-foot { display: flex; justify-content: space-between; font-size: .72rem; color: var(--mute); margin-top: .4rem; }
+  .admin-grid { display: grid; gap: 1rem; }
+  @media (min-width: 980px) { .admin-grid.two { grid-template-columns: 1fr 1fr; } }
+  .list-row { display: flex; align-items: center; gap: .65rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+  .list-row:last-child { border-bottom: 0; }
+  .list-row.click { cursor: pointer; }
+  .list-row.click:hover { background: var(--bg-2); }
+  .kpi small { display: block; font-size: .75rem; color: var(--mute); margin-top: .15rem; font-weight: 600; }
+  .mfa-box { max-width: 440px; margin: 0 auto; text-align: center; }
+  .mfa-box .qr { width: 210px; height: 210px; margin: 1rem auto; background: #fff; padding: 8px; border-radius: 14px; }
+  .code-input { font-size: 1.5rem; letter-spacing: .45em; text-align: center; font-weight: 800; }
+  .secret { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .8rem; background: var(--bg-2); border-radius: 8px; padding: .5rem .7rem; overflow-wrap: anywhere; user-select: all; }
   .legal { max-width: 720px; }
   .legal h2 { font-size: 1.02rem; font-weight: 800; margin: 1.6rem 0 .4rem; }
   .legal p, .legal li { color: var(--text-2); }
@@ -492,13 +542,32 @@ async function loadSession() {
   Object.assign(state, { user: user ?? null, profile: null, sub: null, active: false, isAdmin: false });
   if (user) {
     const [{ data: profile }, { data: sub }] = await Promise.all([
-      sb.from("profiles").select("username, is_admin, created_at").eq("id", user.id).maybeSingle(),
+      sb.from("profiles").select("username, is_admin, is_banned, created_at").eq("id", user.id).maybeSingle(),
       sb.from("subscriptions").select("current_period_end").eq("user_id", user.id).maybeSingle(),
     ]);
+    if (profile?.is_banned) {
+      await sb.auth.signOut();
+      Object.assign(state, { user: null, profile: null, sub: null, active: false, isAdmin: false });
+      toast("Tu cuenta está suspendida.", 6000);
+      return;
+    }
     state.profile = profile; state.sub = sub;
     state.active = !!sub && new Date(sub.current_period_end) > new Date();
     state.isAdmin = !!profile?.is_admin;
+    startPresence();
   }
+}
+
+// Presencia: avisa al servidor que el usuario está conectado (cada minuto, solo con la pestaña visible).
+let presenceTimer = null;
+function startPresence() {
+  if (presenceTimer) return;
+  const beat = () => {
+    if (state.user && document.visibilityState === "visible") sb.rpc("touch_presence").then(() => {}, () => {});
+  };
+  beat();
+  presenceTimer = setInterval(beat, 60000);
+  document.addEventListener("visibilitychange", beat);
 }
 async function loadSite() {
   const [{ data: settings }, { data: stats }] = await Promise.all([
@@ -629,6 +698,8 @@ function go(hash) { if (location.hash === hash) render(); else location.hash = h
 async function render() {
   const token = ++renderToken;
   const { path, params } = currentRoute();
+  document.body.classList.toggle("admin-mode", path === "/admin");
+  closeDrawer();
   renderChrome();
   const view = routes[path];
   if (!view) { app.innerHTML = notFound(); return; }
@@ -1271,36 +1342,348 @@ async function viewPayment(params, alive) {
 }
 
 // ═══════════════ Admin ═══════════════
+// Todas las funciones de admin del servidor exigen: marca de admin + sesión verificada
+// con el código del autenticador (aal2). Sin eso responden "No autorizado".
+async function rpc(name, args) {
+  const { data, error } = await sb.rpc(name, args);
+  if (error) throw new Error(error.message || "Error");
+  return data;
+}
+const age = (b) => { if (!b) return "—"; const d = new Date(b), n = new Date(); let a = n.getFullYear() - d.getFullYear(); if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--; return a; };
+function presence(ts) {
+  if (!ts) return { cls: "dot-off", text: "Nunca" };
+  const s = (Date.now() - new Date(ts)) / 1000;
+  if (s < 120) return { cls: "dot-on", text: "En línea" };
+  return { cls: s < 3600 ? "dot-recent" : "dot-off", text: timeAgo(ts) };
+}
+function premiumPill(end) {
+  if (!end) return `<span class="pill pill-off">Gratis</span>`;
+  const d = Math.ceil((new Date(end) - Date.now()) / 86400000);
+  return d > 0 ? `<span class="pill pill-ok">Premium · ${d} d</span>` : `<span class="pill pill-off">Vencida</span>`;
+}
+const fdatetime = (d) => d ? new Date(d).toLocaleString("es-MX", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+const METHOD = { credit_card: "Tarjeta de crédito", debit_card: "Tarjeta de débito", ticket: "OXXO / efectivo", account_money: "Saldo MP", bank_transfer: "Transferencia" };
+const ACTION = { suspender: "Suspendió la cuenta", reactivar: "Reactivó la cuenta", dar_dias: "Dio días de acceso", quitar_dias: "Quitó días de acceso", quitar_acceso: "Quitó el acceso" };
+let adminTimer = null;
+const stopAdminTimer = () => { if (adminTimer) { clearInterval(adminTimer); adminTimer = null; } };
+
 async function viewAdmin(params, alive) {
+  stopAdminTimer();
   await loadSession(); renderChrome();
   if (!state.isAdmin) { app.innerHTML = notFound(); return; }
-  const tab = params.get("t") || "publicar";
   app.dataset.view = "admin";
-  const [{ count: subs }] = await Promise.all([
-    sb.from("subscriptions").select("user_id", { count: "exact", head: true }).gt("current_period_end", new Date().toISOString()),
-    loadSite(),
-  ]);
+  if (!(await ensureMfa(alive))) return;
+  await loadSite();
   if (!alive()) return;
-  const s = state.stats;
+  const tab = params.get("t") || "resumen";
+  const tabs = [["resumen", "Resumen"], ["usuarios", "Usuarios"], ["publicar", "Publicar"], ["lista", "Publicaciones"], ["perfil", "Perfil"], ["bitacora", "Bitácora"]];
   app.innerHTML = `
   <div class="page">
-    <h1 class="page-h" style="margin-bottom:1rem">Panel de administración</h1>
-    <div class="kpis" style="margin-bottom:1.2rem">
-      <div class="card kpi"><b>${num(subs ?? 0)}</b><span>Suscriptores</span></div>
-      <div class="card kpi"><b>${mxn((subs ?? 0) * CONFIG.priceMxn)}</b><span>Ingreso / mes</span></div>
-      <div class="card kpi"><b>${num(s.posts)}</b><span>Publicaciones</span></div>
-      <div class="card kpi"><b>${num(s.likes)}</b><span>Me gusta</span></div>
+    <div class="row between wrap-row" style="margin-bottom:1rem">
+      <h1 class="page-h">Panel de administración</h1>
+      <span class="pill pill-ok">${ic("shield", "ic-xs")} Verificado en 2 pasos</span>
     </div>
-    <nav class="seg" style="margin-bottom:1.2rem">
-      <a class="${tab === "publicar" ? "active" : ""}" href="#/admin?t=publicar">Publicar</a>
-      <a class="${tab === "perfil" ? "active" : ""}" href="#/admin?t=perfil">Perfil</a>
-      <a class="${tab === "lista" ? "active" : ""}" href="#/admin?t=lista">Publicaciones</a>
-    </nav>
-    <div id="admin-body"></div>
+    <nav class="seg" style="margin-bottom:1.2rem">${tabs.map(([k, l]) => `<a class="${tab === k ? "active" : ""}" href="#/admin?t=${k}">${l}</a>`).join("")}</nav>
+    <div id="admin-body"><div class="loading"><div class="spinner"></div></div></div>
   </div>`;
-  if (tab === "perfil") return adminProfile();
-  if (tab === "lista") return adminList(alive);
-  return adminPublish();
+  try {
+    if (tab === "usuarios") return await adminUsers(alive);
+    if (tab === "publicar") return adminPublish();
+    if (tab === "lista") return await adminList(alive);
+    if (tab === "perfil") return adminProfile();
+    if (tab === "bitacora") return await adminAudit(alive);
+    return await adminOverview(alive);
+  } catch (e) {
+    console.error(e);
+    if (alive()) $("#admin-body").innerHTML = `<div class="alert alert-bad">${esc(e.message)}</div>`;
+  }
+}
+
+/** Verificación en dos pasos: activarla la primera vez y pedir el código en cada sesión. */
+async function ensureMfa(alive) {
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel === "aal2") return true;
+  if (!alive()) return false;
+  const { data: f } = await sb.auth.mfa.listFactors();
+  const verified = (f?.totp ?? []).filter((x) => x.status === "verified");
+
+  const shell = (inner) => `<div class="page"><div class="card pad mfa-box">
+    <div class="lock-badge" style="background:var(--accent-soft);color:var(--accent);border:0">${ic("shield")}</div>${inner}</div></div>`;
+  const codeForm = `
+    <form id="mfa-f" class="stack" style="margin-top:1rem">
+      <input class="input code-input" id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required>
+      <div id="mfa-err"></div>
+      <button class="btn btn-accent btn-block" type="submit">Verificar</button>
+    </form>`;
+
+  let factorId;
+  if (verified.length) {
+    factorId = verified[0].id;
+    app.innerHTML = shell(`<h2 class="page-h">Verificación en dos pasos</h2>
+      <p class="small mute" style="margin-top:.5rem">Escribe el código de 6 dígitos de tu app de autenticación (Google Authenticator, Authy, etc.).</p>${codeForm}`);
+  } else {
+    for (const x of (f?.all ?? []).filter((x) => x.status !== "verified")) await sb.auth.mfa.unenroll({ factorId: x.id });
+    const { data: en, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: `Admin ${new Date().toISOString().slice(0, 16)}` });
+    if (error) { app.innerHTML = shell(`<div class="alert alert-bad">No se pudo iniciar la verificación: ${esc(error.message)}</div>`); return false; }
+    factorId = en.id;
+    app.innerHTML = shell(`<h2 class="page-h">Protege tu panel</h2>
+      <p class="small mute" style="margin-top:.5rem">El panel de admin exige verificación en dos pasos. Así, aunque alguien robe tu contraseña, no puede entrar sin tu celular.</p>
+      <ol class="small" style="text-align:left;margin:1rem 0 0;padding-left:1.2rem;color:var(--text-2)">
+        <li>Instala <b>Google Authenticator</b> o <b>Authy</b> en tu celular.</li>
+        <li>Escanea este código QR con la app.</li>
+        <li>Escribe el código de 6 dígitos que aparece.</li></ol>
+      <img class="qr" src="${esc(en.totp.qr_code)}" alt="Código QR de verificación">
+      <p class="xs mute">¿No puedes escanear? Escribe esta clave en la app:</p>
+      <div class="secret" style="margin-top:.4rem">${esc(en.totp.secret)}</div>${codeForm}`);
+  }
+  const input = $("#mfa-code"); input.focus();
+  input.addEventListener("input", () => { input.value = input.value.replace(/\D/g, "").slice(0, 6); });
+  $("#mfa-f").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = e.currentTarget.querySelector("button"), err = $("#mfa-err");
+    if (!/^\d{6}$/.test(input.value)) return showError(err, "Escribe los 6 dígitos.");
+    setBusy(btn, true, "Verificando…");
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code: input.value });
+    setBusy(btn, false);
+    if (error) { input.value = ""; input.focus(); return showError(err, "Código incorrecto o vencido. Intenta con el código nuevo."); }
+    toast("Verificado ✓"); render();
+  });
+  return false;
+}
+
+// ─── Resumen ──────────────────────────────────────────────
+function chartHtml(series, key, money, cls = "") {
+  const max = Math.max(1, ...series.map((d) => Number(d[key]) || 0));
+  const total = series.reduce((a, d) => a + (Number(d[key]) || 0), 0);
+  const fmt = (v) => money ? mxn(v) : num(v);
+  return `<div class="chart ${cls}">${series.map((d) => {
+      const v = Number(d[key]) || 0;
+      return `<i style="height:${Math.max(2, (v / max) * 100)}%" title="${esc(new Date(d.day + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short" }))}: ${esc(fmt(v))}"></i>`;
+    }).join("")}</div>
+    <div class="chart-foot"><span>Hace 30 días</span><span>Total: <b style="color:var(--text)">${fmt(total)}</b></span><span>Hoy</span></div>`;
+}
+async function adminOverview(alive) {
+  const draw = async () => {
+    const o = await rpc("admin_overview");
+    if (!alive()) return;
+    const conv = o.users_total ? Math.round((o.paying_users / o.users_total) * 1000) / 10 : 0;
+    const k = (v, label, sub = "") => `<div class="card kpi"><b>${v}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ""}</div>`;
+    $("#admin-body").innerHTML = `
+      <div class="kpis" style="margin-bottom:.75rem">
+        ${k(num(o.users_total), "Usuarios", `+${num(o.users_today)} hoy · +${num(o.users_7d)} en 7 días`)}
+        ${k(`<span class="row" style="gap:.45rem"><i class="dot dot-on"></i>${num(o.online_now)}</span>`, "En línea ahora", `${num(o.active_24h)} activos en 24 h`)}
+        ${k(num(o.premium_active), "Suscriptores activos", `${num(o.paying_users)} han pagado alguna vez`)}
+        ${k(`${conv}%`, "Conversión", "usuarios que pagaron")}
+        ${k(mxn(o.revenue_month), "Ingresos del mes", `${num(o.payments_month)} pagos · hoy ${mxn(o.revenue_today)}`)}
+        ${k(mxn(o.revenue_total), "Ingresos totales", `${num(o.refunds)} reembolsos`)}
+        ${k(num(o.checkouts_7d), "Intentos de pago", "últimos 7 días")}
+        ${k(num(o.banned), "Suspendidos", `${num(o.likes_real)} me gusta reales`)}
+      </div>
+      <div class="admin-grid two" style="margin-bottom:1rem">
+        <div class="card pad"><h2 class="section-h">Registros por día</h2>${chartHtml(o.series, "signups", false, "green")}</div>
+        <div class="card pad"><h2 class="section-h">Ingresos por día</h2>${chartHtml(o.series, "revenue", true)}</div>
+      </div>
+      <div class="admin-grid two">
+        <div class="card pad"><div class="row between"><h2 class="section-h">Conectados recientemente</h2><span class="xs mute">últimos 15 min</span></div>
+          <div style="margin-top:.5rem">${o.online_list.length ? o.online_list.map((u) => { const pr = presence(u.last_seen_at); return `
+            <div class="list-row click" data-user="${esc(u.id)}"><div class="initial" style="width:32px;height:32px;font-size:.8rem">${esc((u.username || "?")[0].toUpperCase())}</div>
+              <div class="grow"><div class="small bold">${esc(u.username)}</div><div class="xs mute row" style="gap:.35rem"><i class="dot ${pr.cls}"></i>${esc(pr.text)}</div></div>
+              ${u.premium ? `<span class="pill pill-ok">Premium</span>` : `<span class="pill pill-off">Gratis</span>`}</div>`; }).join("")
+            : `<p class="small mute" style="padding:.8rem 0">Nadie conectado en este momento.</p>`}</div></div>
+        <div class="card pad"><h2 class="section-h">Últimos pagos</h2>
+          <div style="margin-top:.5rem">${o.recent_payments.length ? o.recent_payments.map((p) => `
+            <div class="list-row click" data-user="${esc(p.user_id)}"><div class="grow"><div class="small bold">${esc(p.username || "—")}</div>
+              <div class="xs mute">${fdatetime(p.approved_at)} · ${esc(METHOD[p.method] ?? p.method ?? "—")}</div></div>
+              <div class="bold small">${mxn(p.amount)}</div>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</div>`).join("")
+            : `<p class="small mute" style="padding:.8rem 0">Aún no hay pagos.</p>`}</div></div>
+      </div>
+      <p class="xs mute" style="margin-top:1rem;text-align:right">Se actualiza solo cada 30 segundos · ${new Date().toLocaleTimeString("es-MX")}</p>`;
+  };
+  await draw();
+  $("#admin-body").addEventListener("click", (e) => { const r = e.target.closest("[data-user]"); if (r) openUserDrawer(r.dataset.user); });
+  adminTimer = setInterval(() => { if (!alive()) return stopAdminTimer(); if (!$(".drawer-bg")) draw().catch(() => {}); }, 30000);
+}
+
+// ─── Usuarios ─────────────────────────────────────────────
+const usersState = { q: "", filter: "all", sort: "recent", page: 0, size: 25 };
+async function adminUsers(alive) {
+  const filters = [["all", "Todos"], ["online", "En línea"], ["active", "Activos 24 h"], ["premium", "Premium"], ["free", "Sin suscripción"], ["expired", "Vencidos"], ["banned", "Suspendidos"]];
+  $("#admin-body").innerHTML = `
+    <div class="card pad">
+      <div class="toolbar">
+        <input class="input grow" id="u-q" type="search" placeholder="Buscar por usuario, correo o ID…" value="${esc(usersState.q)}" style="min-width:200px">
+        <select class="input" id="u-sort" style="width:auto">
+          <option value="recent">Más recientes</option><option value="last_seen">Última conexión</option>
+          <option value="paid">Más pagado</option><option value="likes">Más me gusta</option><option value="username">Nombre (A–Z)</option>
+        </select>
+        <button class="icon-btn" id="u-refresh" title="Actualizar">${ic("eye", "ic-sm")}</button>
+      </div>
+      <div class="chips" id="u-filters" style="margin-bottom:1rem">${filters.map(([k, l]) => `<button class="chip ${usersState.filter === k ? "on" : ""}" data-f="${k}">${l}</button>`).join("")}</div>
+      <div id="u-table"><div class="loading" style="min-height:20vh"><div class="spinner"></div></div></div>
+    </div>`;
+  $("#u-sort").value = usersState.sort;
+
+  const load = async () => {
+    const res = await rpc("admin_list_users", { p_search: usersState.q, p_filter: usersState.filter, p_sort: usersState.sort, p_limit: usersState.size, p_offset: usersState.page * usersState.size });
+    if (!alive()) return;
+    const pages = Math.max(1, Math.ceil(res.total / usersState.size));
+    $("#u-table").innerHTML = res.rows.length ? `
+      <div class="table-wrap"><table class="utable">
+        <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Edad</th><th class="hide-m">Registro</th></tr></thead>
+        <tbody>${res.rows.map((u) => { const pr = presence(u.last_seen_at); return `
+          <tr data-user="${esc(u.id)}">
+            <td><div class="u-cell"><div class="initial">${esc((u.username || "?")[0].toUpperCase())}</div><div style="min-width:0">
+              <div class="u-name">${esc(u.username)}${u.is_admin ? `<span class="tag tag-admin">Admin</span>` : ""}${u.is_banned ? `<span class="tag tag-ban">Suspendido</span>` : ""}</div>
+              <div class="u-mail">${esc(u.email)}</div></div></div></td>
+            <td><span class="row" style="gap:.45rem"><i class="dot ${pr.cls}"></i><span class="small">${esc(pr.text)}</span></span></td>
+            <td>${premiumPill(u.sub_end)}</td>
+            <td class="hide-m"><b>${mxn(u.total_paid)}</b><div class="xs mute">${num(u.payments_count)} pago(s)</div></td>
+            <td class="hide-m">${num(u.likes_given)}</td>
+            <td class="hide-m">${age(u.birthdate)}</td>
+            <td class="hide-m"><span class="small">${fdate(u.created_at)}</span></td>
+          </tr>`; }).join("")}</tbody></table></div>
+      <div class="pager"><span class="small mute">${num(res.total)} usuario(s) · página ${usersState.page + 1} de ${pages}</span>
+        <div class="row"><button class="btn btn-line btn-sm" id="u-prev" ${usersState.page === 0 ? "disabled" : ""}>Anterior</button>
+        <button class="btn btn-line btn-sm" id="u-next" ${usersState.page + 1 >= pages ? "disabled" : ""}>Siguiente</button></div></div>`
+      : `<div class="empty">${ic("user")}<p>No hay usuarios con estos filtros.</p></div>`;
+    $("#u-prev")?.addEventListener("click", () => { usersState.page--; load(); });
+    $("#u-next")?.addEventListener("click", () => { usersState.page++; load(); });
+  };
+
+  let t;
+  $("#u-q").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { usersState.q = e.target.value.trim(); usersState.page = 0; load().catch((x) => toast(x.message)); }, 300); });
+  $("#u-sort").addEventListener("change", (e) => { usersState.sort = e.target.value; usersState.page = 0; load(); });
+  $("#u-refresh").addEventListener("click", () => load());
+  $("#u-filters").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-f]"); if (!b) return;
+    usersState.filter = b.dataset.f; usersState.page = 0;
+    $$(".chip", $("#u-filters")).forEach((c) => c.classList.toggle("on", c === b)); load();
+  });
+  $("#u-table").addEventListener("click", (e) => { const r = e.target.closest("[data-user]"); if (r) openUserDrawer(r.dataset.user, load); });
+  await load();
+  adminTimer = setInterval(() => { if (!alive()) return stopAdminTimer(); if (!$(".drawer-bg")) load().catch(() => {}); }, 30000);
+}
+
+// ─── Detalle de usuario (panel lateral) ───────────────────
+function closeDrawer() { $(".drawer-bg")?.remove(); document.removeEventListener("keydown", drawerKey); }
+function drawerKey(e) { if (e.key === "Escape") closeDrawer(); }
+async function openUserDrawer(id, onChange) {
+  closeDrawer();
+  const bg = document.createElement("div");
+  bg.className = "drawer-bg";
+  bg.innerHTML = `<aside class="drawer" role="dialog" aria-modal="true" aria-label="Detalle del usuario"><div class="loading"><div class="spinner"></div></div></aside>`;
+  bg.addEventListener("click", (e) => { if (e.target === bg) closeDrawer(); });
+  document.addEventListener("keydown", drawerKey);
+  document.body.append(bg);
+  const drawer = $(".drawer", bg);
+
+  const draw = async () => {
+    let d;
+    try { d = await rpc("admin_user_detail", { p_user: id }); }
+    catch (e) { drawer.innerHTML = `<div class="pad"><div class="alert alert-bad">${esc(e.message)}</div></div>`; return; }
+    const u = d.user;
+    if (!u) { drawer.innerHTML = `<div class="pad"><div class="alert alert-bad">Usuario no encontrado.</div></div>`; return; }
+    const pr = presence(u.last_seen_at);
+    const isSelf = u.id === state.user.id;
+    const subActive = u.sub_end && new Date(u.sub_end) > new Date();
+    drawer.innerHTML = `
+      <div class="drawer-head">
+        <div class="initial" style="width:44px;height:44px">${esc((u.username || "?")[0].toUpperCase())}</div>
+        <div class="grow"><div class="u-name" style="font-size:1.05rem">${esc(u.username)}${u.is_admin ? `<span class="tag tag-admin">Admin</span>` : ""}</div>
+          <div class="u-mail" style="max-width:none">${esc(u.email)}</div></div>
+        <button class="icon-btn" data-close aria-label="Cerrar">${ic("close", "ic-sm")}</button>
+      </div>
+      <div class="drawer-sec">
+        <div class="row wrap-row" style="gap:.4rem;margin-bottom:1rem">
+          <span class="pill ${pr.cls === "dot-on" ? "pill-ok" : "pill-off"}"><i class="dot ${pr.cls}"></i>${esc(pr.text)}</span>
+          ${premiumPill(u.sub_end)}
+          ${u.is_banned ? `<span class="pill" style="background:var(--bad-soft);color:var(--bad)">Suspendido</span>` : ""}
+        </div>
+        <div class="info-grid">
+          <div><span>Correo</span><b>${esc(u.email)}</b></div>
+          <div><span>Edad</span><b>${age(u.birthdate)} años</b></div>
+          <div><span>Registro</span><b>${fdatetime(u.created_at)}</b></div>
+          <div><span>Último inicio de sesión</span><b>${fdatetime(u.last_sign_in_at)}</b></div>
+          <div><span>Última conexión</span><b>${fdatetime(u.last_seen_at)}</b></div>
+          <div><span>Me gusta dados</span><b>${num(u.likes_given)}</b></div>
+          <div><span>Verificación 2 pasos</span><b>${u.mfa_factors > 0 ? "Activada" : "No"}</b></div>
+          <div><span>ID</span><b class="xs" style="font-family:ui-monospace,monospace">${esc(u.id)}</b></div>
+        </div>
+      </div>
+      <div class="drawer-sec">
+        <h3>Suscripción</h3>
+        <p class="small" style="margin-bottom:.8rem">${subActive ? `Acceso activo hasta el <b>${fdatetime(u.sub_end)}</b>` : u.sub_end ? `Venció el ${fdatetime(u.sub_end)}` : "Nunca ha tenido acceso."}</p>
+        <div class="row wrap-row">
+          <button class="btn btn-soft btn-sm" data-days="7">+7 días</button>
+          <button class="btn btn-soft btn-sm" data-days="30">+30 días</button>
+          <input class="input" id="d-days" type="number" min="-365" max="365" placeholder="Días" style="width:90px;min-height:34px;padding:.3rem .6rem">
+          <button class="btn btn-line btn-sm" data-days="custom">Aplicar</button>
+          ${subActive ? `<button class="btn btn-danger btn-sm" data-revoke>Quitar acceso</button>` : ""}
+        </div>
+        <p class="hint">Los días de cortesía no generan pagos; quedan en la bitácora. Usa números negativos para restar.</p>
+      </div>
+      <div class="drawer-sec">
+        <h3>Pagos (${d.payments.length})</h3>
+        ${d.payments.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Estado</th></tr></thead><tbody>
+          ${d.payments.map((p) => `<tr title="Operación Mercado Pago: ${esc(p.provider_payment_id)}"><td class="small">${fdatetime(p.approved_at)}</td><td class="bold">${mxn(p.amount)}</td>
+            <td class="small">${esc(METHOD[p.method] ?? p.method ?? "—")}</td><td>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</td></tr>`).join("")}
+          </tbody></table></div>` : `<p class="small mute">Sin pagos.</p>`}
+        <p class="xs mute" style="margin-top:.6rem">${d.attempts.length ? `${d.attempts.length} intento(s) de pago · último ${fdatetime(d.attempts[0].created_at)}` : "Nunca intentó pagar."}</p>
+      </div>
+      ${isSelf || u.is_admin ? "" : `
+      <div class="drawer-sec">
+        <h3>Moderación</h3>
+        ${u.is_banned ? `
+          <div class="alert alert-bad" style="margin-bottom:.8rem">Suspendido el ${fdatetime(u.banned_at)}${u.banned_reason ? ` · Motivo: ${esc(u.banned_reason)}` : ""}</div>
+          <button class="btn btn-line btn-block" data-unban>Reactivar cuenta</button>` : `
+          <textarea class="input" id="d-reason" maxlength="300" placeholder="Motivo de la suspensión (opcional)" style="min-height:70px"></textarea>
+          <button class="btn btn-danger btn-block" data-ban style="margin-top:.6rem">Suspender cuenta</button>
+          <p class="hint">La suspensión cierra sus sesiones al instante, le impide iniciar sesión y le bloquea el contenido.</p>`}
+      </div>`}
+      <div class="drawer-sec" style="border-bottom:0">
+        <h3>Historial de acciones</h3>
+        ${d.audit.length ? d.audit.map((a) => `<div class="list-row"><div class="grow"><div class="small bold">${esc(ACTION[a.action] ?? a.action)}${a.details?.dias ? ` (${a.details.dias > 0 ? "+" : ""}${esc(a.details.dias)})` : ""}</div>
+          <div class="xs mute">${fdatetime(a.created_at)}${a.details?.motivo ? ` · ${esc(a.details.motivo)}` : ""}${a.details?.nota ? ` · ${esc(a.details.nota)}` : ""}</div></div></div>`).join("")
+          : `<p class="small mute">Sin acciones del admin.</p>`}
+      </div>`;
+  };
+
+  const act = async (btn, fn, ok) => {
+    setBusy(btn, true);
+    try { await fn(); toast(ok); await draw(); onChange?.(); }
+    catch (e) { setBusy(btn, false); toast(e.message, 5000); }
+  };
+  drawer.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close]")) return closeDrawer();
+    const dd = e.target.closest("[data-days]");
+    if (dd) {
+      const days = dd.dataset.days === "custom" ? parseInt($("#d-days", drawer).value, 10) : Number(dd.dataset.days);
+      if (!days || Math.abs(days) > 365) return toast("Escribe un número de días entre -365 y 365");
+      return act(dd, () => rpc("admin_grant_days", { p_user: id, p_days: days, p_note: null }), days > 0 ? `+${days} días aplicados` : `${days} días aplicados`);
+    }
+    const rv = e.target.closest("[data-revoke]");
+    if (rv) { if (!confirm("¿Quitar el acceso a este usuario ahora mismo?")) return; return act(rv, () => rpc("admin_revoke_access", { p_user: id }), "Acceso quitado"); }
+    const bn = e.target.closest("[data-ban]");
+    if (bn) { if (!confirm("¿Suspender esta cuenta? Se cerrarán sus sesiones y no podrá entrar.")) return; return act(bn, () => rpc("admin_set_ban", { p_user: id, p_banned: true, p_reason: $("#d-reason", drawer).value }), "Cuenta suspendida"); }
+    const ub = e.target.closest("[data-unban]");
+    if (ub) return act(ub, () => rpc("admin_set_ban", { p_user: id, p_banned: false, p_reason: null }), "Cuenta reactivada");
+  });
+  await draw();
+}
+
+// ─── Bitácora ─────────────────────────────────────────────
+async function adminAudit(alive) {
+  const rows = await rpc("admin_audit_list", { p_limit: 200 });
+  if (!alive()) return;
+  $("#admin-body").innerHTML = `<div class="card pad">
+    <p class="small mute" style="margin-bottom:.8rem">Todo lo que se hace desde el panel queda registrado aquí y no se puede borrar desde la página.</p>
+    ${rows.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Acción</th><th>Usuario</th><th>Detalles</th><th class="hide-m">Admin</th></tr></thead><tbody>
+      ${rows.map((a) => `<tr><td class="small">${fdatetime(a.created_at)}</td><td class="small bold">${esc(ACTION[a.action] ?? a.action)}</td>
+        <td>${a.target_user ? `<a href="#" class="small" style="color:var(--accent);font-weight:700" data-user="${esc(a.target_user)}">${esc(a.target_username || "—")}</a>` : "—"}</td>
+        <td class="xs mute">${[a.details?.dias ? `${a.details.dias > 0 ? "+" : ""}${a.details.dias} días` : "", a.details?.motivo, a.details?.nota].filter(Boolean).map(esc).join(" · ") || "—"}</td>
+        <td class="small hide-m">${esc(a.admin_username || "—")}</td></tr>`).join("")}
+      </tbody></table></div>` : `<div class="empty">${ic("shield")}<p>Aún no hay acciones registradas.</p></div>`}</div>`;
+  $("#admin-body").addEventListener("click", (e) => { const r = e.target.closest("[data-user]"); if (r) { e.preventDefault(); openUserDrawer(r.dataset.user); } });
 }
 
 function adminPublish() {
