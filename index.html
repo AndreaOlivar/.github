@@ -396,6 +396,8 @@ const CONFIG = {
   bio: "Contenido exclusivo que no publico en ningún otro lugar. Sesiones nuevas cada semana. 💋",
   priceMxn: 79,
   periodDays: 30,
+  // Las publicaciones se muestran con esta ventaja: una recién subida dice "hace 1 hora".
+  postAgeOffsetMinutes: 60,
 };
 const PAGE_SIZE = 12;
 
@@ -418,6 +420,8 @@ const BASE_URL = location.origin + location.pathname;
 const encPath = (s) => encodeURIComponent(s).replace(/['()*!]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 const publicUrl = (bucket, path) => `${CONFIG.supabaseUrl}/storage/v1/object/public/${bucket}/${String(path).split("/").map(encPath).join("/")}`;
 const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+/** Fecha que se muestra al público: la real menos postAgeOffsetMinutes. */
+const shownDate = (d) => new Date(new Date(d).getTime() - CONFIG.postAgeOffsetMinutes * 60000);
 function timeAgo(d) {
   const s = (new Date(d) - Date.now()) / 1000;
   const units = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]];
@@ -765,7 +769,7 @@ function renderPost(p, ctx) {
     <header class="post-head">
       ${avatarImg("avatar-sm")}
       <div class="post-who"><div class="n">${esc(c.name)} ${VERIFIED}</div><div class="h">${esc(CONFIG.handle)}</div></div>
-      <time class="post-time" datetime="${esc(p.published_at)}" title="${esc(new Date(p.published_at).toLocaleString("es-MX"))}">${timeAgo(p.published_at)}</time>
+      <time class="post-time" datetime="${esc(shownDate(p.published_at).toISOString())}" title="${esc(shownDate(p.published_at).toLocaleString("es-MX"))}">${timeAgo(shownDate(p.published_at))}</time>
     </header>
     ${p.caption ? `<p class="post-text">${esc(p.caption)}</p>` : ""}
     ${mediaHtml}
