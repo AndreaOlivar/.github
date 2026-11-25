@@ -1123,7 +1123,6 @@ document.addEventListener("click", (e) => {
 async function viewRegister() {
   if (state.user) return go("#/cuenta");
   app.dataset.view = "auth";
-  const max = new Date(); max.setFullYear(max.getFullYear() - 18);
   app.innerHTML = authShell(`Únete a ${esc(creator().name)}`, "Crea tu cuenta gratis en segundos.", `
     <form id="f" class="stack" novalidate>
       <div><label class="label" for="username">Nombre de usuario</label>
@@ -1132,8 +1131,6 @@ async function viewRegister() {
       <div><label class="label" for="email">Correo electrónico</label>
         <input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></div>
       ${pwField("password", "Contraseña", "new-password")}
-      <div><label class="label" for="birthdate">Fecha de nacimiento</label>
-        <input class="input" id="birthdate" name="birthdate" type="date" required max="${max.toISOString().slice(0, 10)}"></div>
       <label class="check"><input type="checkbox" name="terms" required>
         <span>Confirmo que soy mayor de 18 años y acepto los <a href="#/legal/terminos" style="color:var(--accent);font-weight:700">Términos</a> y el
         <a href="#/legal/privacidad" style="color:var(--accent);font-weight:700">Aviso de privacidad</a>.</span></label>
@@ -1149,12 +1146,11 @@ async function viewRegister() {
     if (!/^[A-Za-z0-9_]{3,20}$/.test(d.username)) return showError(err, "El nombre de usuario no es válido.");
     if (!/^\S+@\S+\.\S+$/.test(d.email)) return showError(err, "Escribe un correo válido.");
     if ((d.password || "").length < 8) return showError(err, "La contraseña debe tener al menos 8 caracteres.");
-    if (!d.birthdate || new Date(d.birthdate) > max) return showError(err, "Debes ser mayor de 18 años para registrarte.");
-    if (!d.terms) return showError(err, "Debes aceptar los términos.");
+    if (!d.terms) return showError(err, "Debes confirmar que eres mayor de 18 años y aceptar los términos.");
     showError(err, ""); setBusy(btn, true, "Creando cuenta…");
     const { data, error } = await sb.auth.signUp({
       email: d.email.trim(), password: d.password,
-      options: { emailRedirectTo: BASE_URL, data: { username: d.username, birthdate: d.birthdate, accepted_terms: true } },
+      options: { emailRedirectTo: BASE_URL, data: { username: d.username, adult_confirmed: true, accepted_terms: true } },
     });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
@@ -1349,7 +1345,6 @@ async function rpc(name, args) {
   if (error) throw new Error(error.message || "Error");
   return data;
 }
-const age = (b) => { if (!b) return "—"; const d = new Date(b), n = new Date(); let a = n.getFullYear() - d.getFullYear(); if (n < new Date(n.getFullYear(), d.getMonth(), d.getDate())) a--; return a; };
 function presence(ts) {
   if (!ts) return { cls: "dot-off", text: "Nunca" };
   const s = (Date.now() - new Date(ts)) / 1000;
@@ -1529,7 +1524,7 @@ async function adminUsers(alive) {
     const pages = Math.max(1, Math.ceil(res.total / usersState.size));
     $("#u-table").innerHTML = res.rows.length ? `
       <div class="table-wrap"><table class="utable">
-        <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Edad</th><th class="hide-m">Registro</th></tr></thead>
+        <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Registro</th></tr></thead>
         <tbody>${res.rows.map((u) => { const pr = presence(u.last_seen_at); return `
           <tr data-user="${esc(u.id)}">
             <td><div class="u-cell"><div class="initial">${esc((u.username || "?")[0].toUpperCase())}</div><div style="min-width:0">
@@ -1539,7 +1534,6 @@ async function adminUsers(alive) {
             <td>${premiumPill(u.sub_end)}</td>
             <td class="hide-m"><b>${mxn(u.total_paid)}</b><div class="xs mute">${num(u.payments_count)} pago(s)</div></td>
             <td class="hide-m">${num(u.likes_given)}</td>
-            <td class="hide-m">${age(u.birthdate)}</td>
             <td class="hide-m"><span class="small">${fdate(u.created_at)}</span></td>
           </tr>`; }).join("")}</tbody></table></div>
       <div class="pager"><span class="small mute">${num(res.total)} usuario(s) · página ${usersState.page + 1} de ${pages}</span>
@@ -1601,7 +1595,7 @@ async function openUserDrawer(id, onChange) {
         </div>
         <div class="info-grid">
           <div><span>Correo</span><b>${esc(u.email)}</b></div>
-          <div><span>Edad</span><b>${age(u.birthdate)} años</b></div>
+          <div><span>Aceptó términos</span><b>${fdatetime(u.accepted_terms_at)}</b></div>
           <div><span>Registro</span><b>${fdatetime(u.created_at)}</b></div>
           <div><span>Último inicio de sesión</span><b>${fdatetime(u.last_sign_in_at)}</b></div>
           <div><span>Última conexión</span><b>${fdatetime(u.last_seen_at)}</b></div>
@@ -1924,7 +1918,7 @@ const LEGAL = {
     <h2>6. Cambios</h2><p>Podemos actualizar estos términos; publicaremos la versión vigente en esta página.</p>`],
   privacidad: ["Aviso de privacidad", () => `
     <p>Tratamos tus datos conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
-    <h2>Datos que recopilamos</h2><ul><li>Correo electrónico y nombre de usuario.</li><li>Fecha de nacimiento (solo para verificar mayoría de edad).</li><li>Historial de pagos (monto, fecha, método). No recibimos ni guardamos datos de tarjetas.</li></ul>
+    <h2>Datos que recopilamos</h2><ul><li>Correo electrónico y nombre de usuario.</li><li>Tu confirmación de que eres mayor de 18 años y de que aceptaste los términos.</li><li>Historial de pagos (monto, fecha, método). No recibimos ni guardamos datos de tarjetas.</li></ul>
     <h2>Para qué los usamos</h2><p>Para crear y proteger tu cuenta, verificar tu edad, darte acceso al contenido y atender aclaraciones de pago.</p>
     <h2>Con quién los compartimos</h2><p>Con Supabase (alojamiento de la cuenta y base de datos) y Mercado Pago (procesamiento del pago). No vendemos tus datos.</p>
     <h2>Tus derechos</h2><p>Puedes consultar y corregir tu nombre de usuario y ver tu historial de pagos en cualquier momento desde “Mi cuenta”.</p>`],
