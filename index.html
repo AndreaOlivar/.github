@@ -643,10 +643,15 @@ async function render() {
 let lbItems = [];
 async function fetchPosts(from) {
   const { data, error } = await sb.from("posts")
-    .select("id, caption, is_free, published_at, likes_count, post_media(id, storage_path, preview_path, kind, width, height, sort)")
+    .select("id, caption, is_free, published_at, post_media(id, storage_path, preview_path, kind, width, height, sort)")
     .order("published_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
   if (error) throw error;
-  const posts = (data ?? []).map((p) => ({ ...p, post_media: [...p.post_media].sort((a, b) => a.sort - b.sort) }));
+  const posts = (data ?? []).map((p) => ({ ...p, likes_total: 0, post_media: [...p.post_media].sort((a, b) => a.sort - b.sort) }));
+  if (posts.length) {
+    const { data: counts } = await sb.rpc("post_like_counts", { p_ids: posts.map((p) => p.id) });
+    const byId = new Map((counts ?? []).map((c) => [c.post_id, c.likes]));
+    posts.forEach((p) => { p.likes_total = byId.get(p.id) ?? 0; });
+  }
   const canSee = (p) => state.isAdmin || state.active || (p.is_free && !!state.user);
   const paths = posts.filter(canSee).flatMap((p) => p.post_media.map((m) => m.storage_path));
   const signed = {};
@@ -765,7 +770,7 @@ function renderPost(p, ctx) {
     ${p.caption ? `<p class="post-text">${esc(p.caption)}</p>` : ""}
     ${mediaHtml}
     <footer class="post-foot">
-      <button class="act ${liked ? "liked" : ""}" data-like="${esc(p.id)}" aria-pressed="${liked}" aria-label="Me gusta">${ic("heart")}<span>${num(p.likes_count)}</span></button>
+      <button class="act ${liked ? "liked" : ""}" data-like="${esc(p.id)}" aria-pressed="${liked}" aria-label="Me gusta">${ic("heart")}<span>${num(p.likes_total)}</span></button>
       <div class="post-meta">${countsHtml(media)}</div>
     </footer>
   </article>`;
@@ -1299,6 +1304,7 @@ function adminPublish() {
             <p class="hint">Déjalo vacío para publicar ahora.</p></div>
         </div>
         <label class="check"><input type="checkbox" id="free"><span><b>Publicación gratis</b> — la ven las personas registradas sin suscripción. Úsala como muestra para atraer suscriptores.</span></label>
+        <label class="check"><input type="checkbox" id="spicy"><span><b>🔥 Contenido muy atrevido</b> — empieza con 70 a 150 me gusta (normal: 20 a 100). Solo tú ves esta marca.</span></label>
         <div class="progress hidden" id="prog"><i></i></div>
         <div id="fp-err"></div>
         <button class="btn btn-accent btn-block" type="submit">Publicar</button>
@@ -1336,7 +1342,7 @@ function adminPublish() {
     try {
       const when = $("#when").value;
       const { error: pErr } = await sb.from("posts").insert({
-        id: postId, caption: $("#caption").value.trim() || null, is_free: $("#free").checked,
+        id: postId, caption: $("#caption").value.trim() || null, is_free: $("#free").checked, is_spicy: $("#spicy").checked,
         published_at: when ? new Date(when).toISOString() : new Date().toISOString(),
       });
       if (pErr) throw pErr;
@@ -1428,20 +1434,37 @@ function adminProfile() {
 }
 
 async function adminList(alive) {
-  const { data: posts } = await sb.from("posts")
-    .select("id, caption, is_free, published_at, likes_count, post_media(storage_path, preview_path, kind)")
-    .order("published_at", { ascending: false }).limit(200);
+  const [{ data: posts }, { data: meta }] = await Promise.all([
+    sb.from("posts").select("id, caption, is_free, published_at, post_media(storage_path, preview_path, kind)")
+      .order("published_at", { ascending: false }).limit(200),
+    sb.rpc("admin_posts_meta"),
+  ]);
   if (!alive()) return;
-  $("#admin-body").innerHTML = `<div class="card pad">${(posts ?? []).map((p) => `
+  const info = new Map((meta ?? []).map((m) => [m.post_id, m]));
+  $("#admin-body").innerHTML = `<div class="card pad">${(posts ?? []).map((p) => {
+    const m = info.get(p.id) ?? { is_spicy: false, base_likes: 0, real_likes: 0 };
+    return `
     <div class="admin-post">
-      <div class="thumbs-row">${p.post_media.slice(0, 3).map((m) => `<img src="${esc(publicUrl("previews", m.preview_path))}" alt="">`).join("")}</div>
+      <div class="thumbs-row">${p.post_media.slice(0, 3).map((x) => `<img src="${esc(publicUrl("previews", x.preview_path))}" alt="">`).join("")}</div>
       <div class="grow">
-        <div class="small bold" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.caption || "Sin descripción")}</div>
-        <div class="xs mute">${fdate(p.published_at)} · ${p.post_media.length} archivo(s) · ${num(p.likes_count)} me gusta
+        <div class="small bold" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.is_spicy ? "🔥 " : ""}${esc(p.caption || "Sin descripción")}</div>
+        <div class="xs mute">${fdate(p.published_at)} · ${p.post_media.length} archivo(s) ·
+          <b style="color:var(--text)">${num(m.base_likes + m.real_likes)} me gusta</b> (${num(m.base_likes)} base + ${num(m.real_likes)} reales)
           ${p.is_free ? ` · <b style="color:var(--accent)">Gratis</b>` : ""}${new Date(p.published_at) > new Date() ? ` · <b style="color:var(--warn)">Programada</b>` : ""}</div>
       </div>
+      <button class="icon-btn" data-spicy="${esc(p.id)}" data-on="${m.is_spicy}" aria-pressed="${m.is_spicy}"
+        title="${m.is_spicy ? "Quitar «muy atrevido» (vuelve a 20–100 base)" : "Marcar como muy atrevido (70–150 base)"}"
+        style="${m.is_spicy ? "background:var(--accent-soft);border-color:var(--accent)" : "filter:grayscale(1);opacity:.6"}">🔥</button>
       <button class="icon-btn" data-del="${esc(p.id)}" aria-label="Eliminar" style="color:var(--bad)">${ic("trash", "ic-sm")}</button>
-    </div>`).join("") || `<div class="empty">${ic("image")}<p>Aún no hay publicaciones.</p></div>`}</div>`;
+    </div>`;
+  }).join("") || `<div class="empty">${ic("image")}<p>Aún no hay publicaciones.</p></div>`}</div>`;
+  $$("[data-spicy]").forEach((b) => b.addEventListener("click", async () => {
+    const on = b.dataset.on !== "true";
+    b.disabled = true;
+    const { error } = await sb.from("posts").update({ is_spicy: on }).eq("id", b.dataset.spicy);
+    if (error) { b.disabled = false; return toast("No se pudo cambiar"); }
+    await loadSite(); toast(on ? "🔥 Marcada como muy atrevida" : "Marca quitada"); render();
+  }));
   $$("[data-del]").forEach((b) => b.addEventListener("click", async () => {
     if (!confirm("¿Eliminar esta publicación y sus archivos? No se puede deshacer.")) return;
     const post = posts.find((p) => p.id === b.dataset.del);
