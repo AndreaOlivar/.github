@@ -775,10 +775,14 @@ async function render() {
 
 // ═══════════════ Perfil + feed ═══════════════
 let lbItems = [];
-async function fetchPosts(from) {
-  const { data, error } = await sb.from("posts")
+// filter: "all" (todas), "free" (solo gratis) o "paid" (solo de pago).
+async function fetchPosts(from, filter = "all", size = PAGE_SIZE) {
+  let q = sb.from("posts")
     .select("id, caption, is_free, published_at, post_media(id, storage_path, preview_path, kind, width, height, sort)")
-    .order("published_at", { ascending: false }).range(from, from + PAGE_SIZE - 1);
+    .order("published_at", { ascending: false }).range(from, from + size - 1);
+  if (filter === "free") q = q.eq("is_free", true);
+  if (filter === "paid") q = q.eq("is_free", false);
+  const { data, error } = await q;
   if (error) throw error;
   const posts = (data ?? []).map((p) => ({ ...p, likes_total: 0, post_media: [...p.post_media].sort((a, b) => a.sort - b.sort) }));
   if (posts.length) {
@@ -798,8 +802,13 @@ async function fetchPosts(from) {
     const { data: l } = await sb.from("post_likes").select("post_id").in("post_id", posts.map((p) => p.id));
     liked = new Set((l ?? []).map((x) => x.post_id));
   }
-  return { posts, signed, liked, canSee, more: posts.length === PAGE_SIZE };
+  return { posts, signed, liked, canSee, more: posts.length === size };
 }
+
+// Fotos gratis hasta arriba del feed:
+//  - siempre para visitantes sin sesión (bloqueadas, invitando a registrarse);
+//  - una sola vez justo después de registrarse (ya desbloqueadas).
+let freeFirstAfterSignup = false;
 
 function profileHeader(tab) {
   const c = creator();
@@ -845,6 +854,8 @@ const countsHtml = (media) => {
 
 // Texto único de la pantalla de bloqueado (cámbialo aquí si quieres otro).
 const LOCKED_TEXT = "Desnudez total · Sin censura 🔞";
+// Texto de las fotos gratis para quien aún no tiene cuenta (sin etiquetas).
+const FREE_LOCKED_TEXT = "Mira esta foto gratis al registrarte 😉";
 
 function renderPost(p, ctx) {
   const c = creator();
@@ -872,12 +883,11 @@ function renderPost(p, ctx) {
     const needAccount = p.is_free && !state.user;
     mediaHtml = `
       <div class="post-media">
-        ${p.is_free ? `<span class="free-tag">Gratis</span>` : ""}
-        <div class="locked hot"><img src="${esc(publicUrl("previews", media[0].preview_path))}" alt="" loading="lazy">
+        <div class="locked ${needAccount ? "" : "hot"}"><img src="${esc(publicUrl("previews", media[0].preview_path))}" alt="" loading="lazy">
           <div class="locked-over"><div>
-            <span class="tease-badge hot">🔥 Muy caliente</span>
+            ${needAccount ? "" : `<span class="tease-badge hot">🔥 Muy caliente</span>`}
             <div class="lock-badge">${ic("lock")}</div>
-            <p class="tease-title">${esc(LOCKED_TEXT)}</p>
+            <p class="tease-title">${esc(needAccount ? FREE_LOCKED_TEXT : LOCKED_TEXT)}</p>
             <div class="tease-meta">${countsHtml(media)}<span>${ic("heart", "ic-xs")}${num(p.likes_total)}</span></div><br>
             ${needAccount ? `<a class="btn btn-accent tease-cta" href="#/registro">Crear cuenta gratis</a>`
               : `<button class="btn btn-accent tease-cta" data-subscribe>🔓 Desbloquear por ${mxn(CONFIG.priceMxn)}</button>
@@ -923,7 +933,13 @@ function renderCells(posts, ctx) {
 }
 
 async function viewProfile(tab, alive) {
-  const first = await fetchPosts(0);
+  const freeFirst = tab === "posts" && (!state.user || freeFirstAfterSignup);
+  if (freeFirst && state.user) freeFirstAfterSignup = false; // solo la primera vez tras registrarse
+  const filter = freeFirst ? "paid" : "all";
+  const [free, first] = await Promise.all([
+    freeFirst ? fetchPosts(0, "free", 50) : null,
+    fetchPosts(0, filter),
+  ]);
   if (!alive()) return;
   lbItems = [];
   app.dataset.view = "profile";
@@ -931,14 +947,18 @@ async function viewProfile(tab, alive) {
 
   const feed = $("#feed"), moreWrap = $("#more");
   let offset = 0;
-  const append = (ctx) => {
+  const drawPosts = (ctx) => {
     if (tab === "media") feed.insertAdjacentHTML("beforeend", renderCells(ctx.posts, ctx));
     else feed.insertAdjacentHTML("beforeend", ctx.posts.map((p) => renderPost(p, ctx)).join(""));
+  };
+  const append = (ctx) => {
+    drawPosts(ctx);
     offset += ctx.posts.length;
     moreWrap.classList.toggle("hidden", !ctx.more);
   };
+  if (free?.posts.length) drawPosts(free);   // las gratis primero (no cuentan para "Cargar más")
   append(first);
-  if (!first.posts.length) {
+  if (!first.posts.length && !free?.posts.length) {
     feed.className = "";
     feed.innerHTML = `<div class="empty">${ic("image")}<p class="bold" style="color:var(--text)">Aún no hay publicaciones</p><p class="small">Vuelve pronto, ¡hay contenido nuevo cada semana!</p></div>`;
   }
@@ -958,7 +978,7 @@ async function viewProfile(tab, alive) {
 
   $("#more button").addEventListener("click", async (e) => {
     const b = e.currentTarget; setBusy(b, true);
-    try { append(await fetchPosts(offset)); } catch { toast("No se pudo cargar más"); }
+    try { append(await fetchPosts(offset, filter)); } catch { toast("No se pudo cargar más"); }
     setBusy(b, false);
   });
 
@@ -1231,7 +1251,12 @@ async function viewRegister() {
     });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
-    if (data.session) { await loadSession(); toast("¡Bienvenido! Tu cuenta está lista."); return go("#/"); }
+    if (data.session) {
+      await loadSession();
+      freeFirstAfterSignup = true; // la primera vez, las fotos gratis salen hasta arriba ya desbloqueadas
+      toast("¡Bienvenido! Tus fotos gratis ya están desbloqueadas 🎁");
+      return go("#/");
+    }
     showError(err, "Tu cuenta se creó, pero el servidor pide confirmación por correo. Intenta iniciar sesión en unos minutos.");
   });
 }
