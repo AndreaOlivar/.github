@@ -337,6 +337,22 @@
   .admin-post .thumbs-row img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--bg-3); }
   .brand-edit .cover { height: clamp(110px, 30vw, 200px); border-radius: 14px; }
   .brand-edit .avatar-xl { margin: -44px 0 0 16px; position: relative; z-index: 2; }
+  /* ═══════════════ Aviso "Desliza" (igual que NetGamer) ═══════════════ */
+  #scroll-hint { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 45;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; opacity: 0; transition: opacity .6s; }
+  @media (max-width: 759px) { #scroll-hint { bottom: calc(var(--bottom-h) + max(14px, env(safe-area-inset-bottom)) + 4px); } }
+  #scroll-hint.visible { opacity: 1; }
+  #scroll-hint span { font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap;
+    color: #fff; text-shadow: 0 2px 10px rgb(0 0 0 / .7); padding: .35rem .8rem; border-radius: 999px;
+    background: rgb(15 15 22 / .6); backdrop-filter: blur(6px); border: 1px solid rgb(255 255 255 / .08); }
+  #scroll-hint .scroll-hint-circulo { width: 38px; height: 38px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+    background: rgb(15 15 22 / .55); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); backdrop-filter: blur(6px);
+    box-shadow: 0 6px 22px rgb(240 56 107 / .35); animation: scrollHintRebote 1.8s ease-in-out infinite; }
+  #scroll-hint .scroll-hint-circulo svg { width: 18px; height: 18px; color: var(--accent-2); }
+  #scroll-hint.solo-flecha span { display: none; }
+  @keyframes scrollHintRebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { #scroll-hint .scroll-hint-circulo { animation: none; } }
+
   /* ═══════════════ Panel admin ═══════════════ */
   .admin-mode .right { display: none !important; }
   @media (min-width: 1280px) { .admin-mode .shell { grid-template-columns: var(--side-w) minmax(0, 1fr); } }
@@ -418,6 +434,11 @@
   <aside class="right" id="right"></aside>
 </div>
 <nav class="bottom-nav" id="bottom-nav" aria-label="Navegación principal"></nav>
+
+<div id="scroll-hint" aria-hidden="true">
+  <span>Desliza para ver el contenido</span>
+  <div class="scroll-hint-circulo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+</div>
 
 <div class="gate hidden" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
   <div class="card">
@@ -713,6 +734,7 @@ async function render() {
   const { path, params } = currentRoute();
   document.body.classList.toggle("admin-mode", path === "/admin");
   closeDrawer();
+  showScrollHint(false);
   renderChrome();
   const view = routes[path];
   if (!view) { app.innerHTML = notFound(); return; }
@@ -923,9 +945,33 @@ async function viewProfile(tab, alive) {
     setBusy(b, false);
   });
 
+  if (tab === "posts") showScrollHint(true);
   feed.addEventListener("click", onFeedClick);
   feed.addEventListener("contextmenu", (e) => { if (e.target.closest(".protected")) e.preventDefault(); });
   feed.addEventListener("scroll", onCarouselScroll, true);
+}
+
+// Aviso "Desliza para ver el contenido" (igual que en NetGamer).
+// Aparece al entrar al inicio y se quita al bajar más de 150 px o a los 25 segundos.
+let hintTimers = [];
+function onHintScroll() {
+  if (Math.max(window.scrollY, document.documentElement.scrollTop) > 150) showScrollHint(false);
+}
+function showScrollHint(show) {
+  const hint = $("#scroll-hint");
+  if (!hint) return;
+  hintTimers.forEach(clearTimeout); hintTimers = [];
+  document.removeEventListener("scroll", onHintScroll, true);
+  hint.classList.remove("visible", "solo-flecha");
+  if (!show) return;
+  if (!$("#gate").classList.contains("hidden")) return;      // se muestra al cerrar el aviso de +18
+  if (window.scrollY > 150) return;                          // ya bajó
+  if (document.documentElement.scrollHeight <= innerHeight + 120) return; // no hay nada abajo
+  hintTimers.push(setTimeout(() => {
+    hint.classList.add("visible");
+    document.addEventListener("scroll", onHintScroll, { capture: true, passive: true });
+    hintTimers.push(setTimeout(() => showScrollHint(false), 25000));
+  }, 900));
 }
 
 function onFeedClick(e) {
@@ -1963,6 +2009,7 @@ function initGate() {
   $("#gate-ok").addEventListener("click", () => {
     try { localStorage.setItem("age_ok_v1", "1"); } catch { /* sin almacenamiento */ }
     gate.classList.add("hidden"); document.body.style.overflow = "";
+    if (currentRoute().path === "/") showScrollHint(true);
   });
 }
 
