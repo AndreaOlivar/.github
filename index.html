@@ -377,6 +377,62 @@
   @keyframes scrollHintRebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
   @media (prefers-reduced-motion: reduce) { #scroll-hint .scroll-hint-circulo { animation: none; } }
 
+  /* ═══════════════ Sección Suscripción ═══════════════ */
+  .subp { padding: 18px 16px 8px; }
+  @media (min-width: 760px) { .subp { padding: 28px 24px 8px; } }
+  .subp-card { border-radius: 24px; overflow: hidden; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+  .subp-top { position: relative; padding: 26px 22px 22px; color: #fff; text-align: center;
+    background: linear-gradient(135deg, #2b1220, #6d1d3c 45%, #f0386b); background-size: cover; background-position: center; }
+  .subp-top::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(10 6 10 / .55), rgb(10 6 10 / .75)); }
+  .subp-top > * { position: relative; }
+  .subp-top .avatar-xl { width: 92px; height: 92px; margin: 0 auto .7rem; border: 3px solid rgb(255 255 255 / .85); }
+  .subp-top .verified { color: #fff; }
+  .subp-name { font-size: 1.3rem; font-weight: 800; display: inline-flex; align-items: center; gap: .35rem; }
+  .subp-kicker { display: inline-flex; align-items: center; gap: .4rem; margin-top: .6rem; padding: .32rem .8rem; border-radius: 999px;
+    font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; background: rgb(255 255 255 / .14); border: 1px solid rgb(255 255 255 / .22); }
+  .subp-price { display: flex; align-items: baseline; justify-content: center; gap: .4rem; margin-top: 1.1rem; }
+  .subp-price b { font-size: 3rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; }
+  .subp-price span { font-size: 1rem; font-weight: 700; opacity: .9; }
+  .subp-price-note { font-size: .82rem; opacity: .85; margin-top: .45rem; }
+  .subp-body { padding: 22px; }
+  .subp-cta { width: 100%; min-height: 56px; border-radius: 16px; font-size: 1.02rem; font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #fff; border: 0; cursor: pointer;
+    box-shadow: 0 14px 34px -10px rgb(240 56 107 / .75); transition: filter .15s, transform .1s; display: inline-flex; align-items: center; justify-content: center; gap: .55rem; }
+  .subp-cta:hover { filter: brightness(1.06); }
+  .subp-cta:active { transform: scale(.99); }
+  .subp-cta[disabled] { opacity: .6; cursor: not-allowed; }
+  .subp-trust { display: flex; align-items: center; justify-content: center; gap: .45rem; margin-top: .8rem; font-size: .8rem; color: var(--mute); font-weight: 600; }
+  .subp-pay { display: flex; justify-content: center; flex-wrap: wrap; gap: .45rem; margin-top: .7rem; }
+  .subp-pay span { font-size: .74rem; font-weight: 700; padding: .3rem .65rem; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--line); color: var(--text-2); }
+  .subp-h { font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); margin: 1.8rem 0 .9rem; }
+  .perks-list { display: grid; gap: .55rem; }
+  @media (min-width: 560px) { .perks-list { grid-template-columns: 1fr 1fr; } }
+  .perk { display: flex; gap: .75rem; align-items: flex-start; padding: .85rem; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--line); }
+  .perk-ic { width: 38px; height: 38px; flex: none; border-radius: 11px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .perk-ic .ic { width: 19px; height: 19px; }
+  .perk b { display: block; font-size: .9rem; font-weight: 800; }
+  .perk small { display: block; font-size: .78rem; color: var(--mute); margin-top: .1rem; line-height: 1.35; }
+  .subp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+  .subp-stats div { text-align: center; padding: .8rem .3rem; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--line); }
+  .subp-stats b { display: block; font-size: 1.25rem; font-weight: 800; letter-spacing: -.02em; }
+  .subp-stats span { font-size: .68rem; font-weight: 700; color: var(--mute); text-transform: uppercase; letter-spacing: .05em; }
+  .steps { display: grid; gap: .6rem; counter-reset: paso; }
+  .step { display: flex; gap: .8rem; align-items: flex-start; }
+  .step::before { counter-increment: paso; content: counter(paso); flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-weight: 800; font-size: .85rem; }
+  .step b { display: block; font-size: .9rem; }
+  .step small { color: var(--mute); font-size: .8rem; }
+  .subp-faq details { border-bottom: 1px solid var(--line); padding: .85rem 0; }
+  .subp-faq summary { cursor: pointer; font-weight: 700; font-size: .92rem; list-style: none; display: flex; justify-content: space-between; gap: 1rem; }
+  .subp-faq summary::-webkit-details-marker { display: none; }
+  .subp-faq summary::after { content: "+"; color: var(--accent); font-weight: 800; font-size: 1.1rem; line-height: 1; }
+  .subp-faq details[open] summary::after { content: "–"; }
+  .subp-faq p { margin-top: .5rem; color: var(--text-2); font-size: .88rem; }
+  .subp-active { border-radius: 16px; padding: 1rem; background: var(--ok-soft); color: var(--ok); display: flex; gap: .75rem; align-items: center; }
+  .subp-active .ic { width: 26px; height: 26px; flex: none; }
+  .subp-active b { display: block; color: var(--text); }
+  .subp-active small { color: var(--text-2); }
+
   /* ═══════════════ Panel admin ═══════════════ */
   .admin-mode .right { display: none !important; }
   @media (min-width: 1280px) { .admin-mode .shell { grid-template-columns: var(--side-w) minmax(0, 1fr); } }
@@ -551,7 +607,10 @@ const P = {
   calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/>',
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  bolt: '<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  zoom: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
 };
 const ic = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
 const VERIFIED = `<svg class="verified" viewBox="0 0 24 24" aria-label="Verificada"><path fill="currentColor" d="M12 1.8 14.6 3.7l3.2-.2 1 3 2.7 1.8-1 3 1 3-2.7 1.8-1 3-3.2-.2L12 22.2l-2.6-1.9-3.2.2-1-3-2.7-1.8 1-3-1-3 2.7-1.8 1-3 3.2.2z"/><path d="m8.3 12.2 2.4 2.4 5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -641,7 +700,7 @@ function renderChrome() {
   const on = (p) => (path === p ? "active" : "");
   const items = [
     ["/", "home", "Inicio"],
-    ["/multimedia", "image", "Multimedia"],
+    ["/suscripcion", "star", "Suscripción"],
     // El botón "Entrar" lleva al registro; desde ahí hay un enlace para iniciar sesión.
     state.user ? ["/cuenta", "user", "Mi cuenta"] : ["/registro", "login", "Entrar"],
     ...(state.isAdmin ? [["/admin", "shield", "Admin"]] : []),
@@ -699,14 +758,12 @@ function renderChrome() {
     <div class="legal-links">${legal}</div>`;
 }
 
-// Botones "Suscribirme" en cualquier parte de la página.
+// Botones "Suscribirme" / "Desbloquear" en cualquier parte: llevan a la sección Suscripción.
 document.addEventListener("click", (e) => {
   const b = e.target.closest("[data-subscribe]");
   if (!b) return;
   e.preventDefault();
-  if (!state.user) return go("#/registro");
-  if (state.active) return go("#/cuenta");
-  startCheckout(b);
+  go("#/suscripcion");
 });
 
 async function startCheckout(btn, errEl) {
@@ -733,6 +790,7 @@ const routes = {
   "/": (p, a) => viewProfile("posts", a),
   "/multimedia": (p, a) => viewProfile("media", a),
   "/galeria": () => go("#/"),
+  "/suscripcion": viewSubscription,
   "/registro": viewRegister,
   "/entrar": viewLogin,
   "/nueva-clave": viewNewPassword,
@@ -1203,6 +1261,99 @@ function openLightbox(index) {
 }
 
 // ═══════════════ Cuenta: registro / entrar ═══════════════
+// ═══════════════ Suscripción ═══════════════
+async function viewSubscription(_p, alive) {
+  await Promise.all([loadSession(), loadSite()]);
+  if (!alive()) return;
+  renderChrome();
+  app.dataset.view = "subscription";
+  const c = creator(), s = state.stats;
+  const price = mxn(CONFIG.priceMxn);
+  const end = state.sub ? new Date(state.sub.current_period_end) : null;
+  const daysLeft = end ? Math.max(0, Math.ceil((end - Date.now()) / 86400000)) : 0;
+
+  const cta = (id) => state.active
+    ? `<button class="subp-cta" data-checkout id="${id}">${ic("refresh", "ic-sm")} Renovar por ${price}</button>`
+    : `<button class="subp-cta" data-checkout id="${id}">${ic("lock", "ic-sm")} Suscribirse por ${price} al mes</button>`;
+
+  const perks = [
+    ["image", "Acceso a todo el contenido", "Todas las fotos y videos, completos y sin difuminar."],
+    ["bolt", "Activación inmediata", "Pagando con tarjeta tu acceso se activa al instante."],
+    ["calendar", "Contenido nuevo cada semana", "Sesiones nuevas solo para suscriptores."],
+    ["zoom", "Alta calidad con zoom", "Mira cada detalle a pantalla completa."],
+    ["lock", "Sin censura", "Lo que no publico en ningún otro lado. Solo +18."],
+    ["refresh", "Sin renovación automática", "Pagas una vez. Tú decides si renuevas."],
+    ["shield", "Pago 100% seguro", "Procesado por Mercado Pago. No guardamos tu tarjeta."],
+    ["eye", "Privado y discreto", "Tu suscripción es solo tuya. Nadie más la ve."],
+  ];
+
+  app.innerHTML = `
+  <div class="subp">
+    <article class="subp-card">
+      <header class="subp-top" ${c.cover ? `style="background-image:url('${esc(c.cover)}')"` : ""}>
+        ${avatarImg("avatar-xl")}
+        <div class="subp-name">${esc(c.name)} ${VERIFIED}</div>
+        <div><span class="subp-kicker">${ic("star", "ic-xs")} Suscripción mensual</span></div>
+        <div class="subp-price"><b>${price}</b><span>/ mes</span></div>
+        <p class="subp-price-note">${CONFIG.periodDays} días de acceso total · Sin renovación automática</p>
+      </header>
+
+      <div class="subp-body">
+        ${state.active ? `
+          <div class="subp-active" style="margin-bottom:1rem">${ic("check")}
+            <div><b>Tu suscripción está activa</b><small>Te quedan ${daysLeft} día${daysLeft === 1 ? "" : "s"} · hasta el ${fdate(end)}</small></div>
+          </div>` : ""}
+        ${cta("cta-top")}
+        <div id="subp-err-top" style="margin-top:.7rem"></div>
+        ${state.user ? "" : `<p class="small mute" style="text-align:center;margin-top:.7rem">Primero crea tu cuenta gratis (tarda 10 segundos). ¿Ya tienes una?
+          <a href="#/entrar?next=/suscripcion" style="color:var(--accent);font-weight:700">Inicia sesión</a></p>`}
+        ${state.active ? `<a class="btn btn-line btn-block" href="#/" style="margin-top:.7rem">Ver el contenido</a>` : ""}
+        <div class="subp-trust">${ic("shield", "ic-xs")} Pago seguro con Mercado Pago</div>
+        <div class="subp-pay"><span>💳 Tarjeta de crédito</span><span>💳 Débito</span><span>🏪 OXXO</span><span>💰 Saldo Mercado Pago</span></div>
+
+        <h2 class="subp-h">Qué incluye</h2>
+        <div class="perks-list">${perks.map(([i, t, d]) => `
+          <div class="perk"><div class="perk-ic">${ic(i)}</div><div><b>${t}</b><small>${d}</small></div></div>`).join("")}
+        </div>
+
+        <h2 class="subp-h">Lo que desbloqueas hoy</h2>
+        <div class="subp-stats">
+          <div><b>${num(s.photos)}</b><span>Fotos</span></div>
+          <div><b>${num(s.videos)}</b><span>Videos</span></div>
+          <div><b>${num(s.posts)}</b><span>Publicaciones</span></div>
+          <div><b>${num(s.likes)}</b><span>Me gusta</span></div>
+        </div>
+
+        <h2 class="subp-h">Cómo funciona</h2>
+        <div class="steps">
+          <div class="step"><div><b>Crea tu cuenta gratis ${state.user ? "✅" : ""}</b><small>Solo usuario, correo y contraseña.</small></div></div>
+          <div class="step"><div><b>Paga ${price} con Mercado Pago</b><small>Tarjeta de crédito, débito, saldo u OXXO.</small></div></div>
+          <div class="step"><div><b>Disfruta ${CONFIG.periodDays} días de acceso total</b><small>Todo el contenido se desbloquea en cuanto se aprueba tu pago.</small></div></div>
+        </div>
+
+        <h2 class="subp-h">Preguntas frecuentes</h2>
+        <div class="subp-faq">
+          <details><summary>¿Se renueva sola cada mes?</summary><p>No. Pagas una vez y tienes ${CONFIG.periodDays} días de acceso. Nunca te cobramos de nuevo sin que tú lo decidas. Si renuevas antes de que termine, los días se suman.</p></details>
+          <details><summary>¿Puedo pagar en efectivo en OXXO?</summary><p>Sí. Mercado Pago te da una referencia para pagar en OXXO. Tu acceso se activa en cuanto el pago se acredita (puede tardar desde unos minutos hasta 48 horas).</p></details>
+          <details><summary>¿Qué aparece en mi estado de cuenta?</summary><p>Un cargo de Mercado Pago. Tu suscripción es privada y discreta.</p></details>
+          <details><summary>¿Qué pasa cuando terminan los ${CONFIG.periodDays} días?</summary><p>El contenido se vuelve a bloquear y puedes renovar cuando quieras desde esta sección o desde "Mi cuenta".</p></details>
+          <details><summary>¿Es seguro pagar aquí?</summary><p>Sí. El pago se hace directamente en Mercado Pago; nosotros nunca vemos ni guardamos los datos de tu tarjeta.</p></details>
+        </div>
+
+        <div style="margin-top:1.6rem">${cta("cta-bottom")}<div id="subp-err-bottom" style="margin-top:.7rem"></div></div>
+        <p class="xs mute" style="text-align:center;margin-top:.8rem">Al suscribirte aceptas los <a href="#/legal/terminos" style="text-decoration:underline">Términos</a> y la
+          <a href="#/legal/reembolsos" style="text-decoration:underline">Política de reembolsos</a>. Solo para mayores de 18 años.</p>
+      </div>
+    </article>
+  </div>`;
+
+  // El botón de esta sección sí abre el pago de Mercado Pago.
+  $$("[data-checkout]", app).forEach((b) => b.addEventListener("click", () => {
+    if (!state.user) return go("#/registro?next=/suscripcion");
+    startCheckout(b, $(b.id === "cta-top" ? "#subp-err-top" : "#subp-err-bottom"));
+  }));
+}
+
 function authShell(title, subtitle, body) {
   return `<div class="auth"><div class="auth-top">${avatarImg("avatar-xl")}<h1>${title}</h1><p>${subtitle}</p></div><div class="card pad">${body}</div></div>`;
 }
@@ -1216,8 +1367,11 @@ document.addEventListener("click", (e) => {
   inp.type = inp.type === "password" ? "text" : "password";
 });
 
-async function viewRegister() {
-  if (state.user) return go("#/cuenta");
+async function viewRegister(params) {
+  // ?next=/suscripcion → al terminar el registro regresa a la sección de suscripción.
+  const nextRaw = params?.get("next");
+  const next = nextRaw && /^\/[a-z/-]*$/.test(nextRaw) ? nextRaw : null;
+  if (state.user) return go("#" + (next || "/cuenta"));
   app.dataset.view = "auth";
   app.innerHTML = authShell(`Únete a ${esc(creator().name)}`, "Crea tu cuenta gratis en segundos.", `
     <form id="f" class="stack" novalidate>
@@ -1253,6 +1407,7 @@ async function viewRegister() {
     if (error) return showError(err, authErrorMsg(error));
     if (data.session) {
       await loadSession();
+      if (next) { toast("¡Cuenta creada! Ya puedes suscribirte 💳"); return go("#" + next); }
       freeFirstAfterSignup = true; // la primera vez, las fotos gratis salen hasta arriba ya desbloqueadas
       toast("¡Bienvenido! Tus fotos gratis ya están desbloqueadas 🎁");
       return go("#/");
