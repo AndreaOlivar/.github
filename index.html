@@ -843,29 +843,8 @@ const countsHtml = (media) => {
   return `${im ? `<span>${ic("camera", "ic-xs")}${im}</span>` : ""}${vi ? `<span>${ic("video", "ic-xs")}${vi}</span>` : ""}`;
 };
 
-// Frases de la pantalla de bloqueado (con la voz de Andrea). Cada publicación
-// tiene siempre la misma frase, elegida a partir de su ID.
-const TEASERS_HOT = [
-  "Esta casi no la subo… 🙈🔥",
-  "La más atrevida que he hecho hasta ahora 😈",
-  "Aquí no me guardé absolutamente nada 🔥",
-  "Esta es la que todos me piden 😏",
-  "Ni yo puedo creer que la subí 🫣",
-  "Sin censura. Sin filtros. Solo para ti 🔥",
-];
-const TEASERS = [
-  "Esta no la vas a ver en ningún otro lado 💋",
-  "Una de mis favoritas de esta sesión 😏",
-  "Te va a gustar lo que hay aquí… 😉",
-  "Solo para quienes se atreven a ver más 🖤",
-  "La subí pensando en ti 💋",
-  "Lo que no publico en mis redes está aquí 🔒",
-];
-function teaser(p) {
-  const list = p.hot ? TEASERS_HOT : TEASERS;
-  let h = 0; for (const ch of String(p.id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return list[h % list.length];
-}
+// Texto único de la pantalla de bloqueado (cámbialo aquí si quieres otro).
+const LOCKED_TEXT = "Desnudez total · Sin censura 🔞";
 
 function renderPost(p, ctx) {
   const c = creator();
@@ -891,17 +870,14 @@ function renderPost(p, ctx) {
       </div>`;
   } else if (media.length) {
     const needAccount = p.is_free && !state.user;
-    const t = teaser(p);
     mediaHtml = `
       <div class="post-media">
         ${p.is_free ? `<span class="free-tag">Gratis</span>` : ""}
-        <div class="locked ${p.hot ? "hot" : ""}"><img src="${esc(publicUrl("previews", media[0].preview_path))}" alt="" loading="lazy">
+        <div class="locked hot"><img src="${esc(publicUrl("previews", media[0].preview_path))}" alt="" loading="lazy">
           <div class="locked-over"><div>
-            ${needAccount ? `<span class="tease-badge">🎁 Gratis con tu cuenta</span>`
-              : p.hot ? `<span class="tease-badge hot">🔥 Muy caliente</span>` : `<span class="tease-badge">💋 Exclusivo</span>`}
+            <span class="tease-badge hot">🔥 Muy caliente</span>
             <div class="lock-badge">${ic("lock")}</div>
-            <p class="tease-title">${esc(needAccount ? "Esta te la regalo 😉" : t)}</p>
-            <p class="tease-sub">${needAccount ? "Solo crea tu cuenta gratis para verla completa." : "Suscríbete para verla completa y sin difuminar."}</p>
+            <p class="tease-title">${esc(LOCKED_TEXT)}</p>
             <div class="tease-meta">${countsHtml(media)}<span>${ic("heart", "ic-xs")}${num(p.likes_total)}</span></div><br>
             ${needAccount ? `<a class="btn btn-accent tease-cta" href="#/registro">Crear cuenta gratis</a>`
               : `<button class="btn btn-accent tease-cta" data-subscribe>🔓 Desbloquear por ${mxn(CONFIG.priceMxn)}</button>
@@ -940,7 +916,7 @@ function renderCells(posts, ctx) {
       }
       return `<div class="cell is-locked" ${p.is_free && !state.user ? `data-go="#/registro"` : "data-subscribe"}>
         <img src="${esc(publicUrl("previews", m.preview_path))}" alt="" loading="lazy">
-        <div class="lock-mini">${ic("lock")}</div>${p.hot ? `<span class="hot-mini" title="Muy caliente">🔥</span>` : ""}
+        <div class="lock-mini">${ic("lock")}</div>
         ${m.kind === "video" ? `<span class="badge-ic">${ic("video", "ic-sm")}</span>` : ""}</div>`;
     });
   }).join("");
