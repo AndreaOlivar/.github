@@ -805,20 +805,7 @@ function profileHeader(tab) {
       <div class="p-handle"><span>${esc(CONFIG.handle)}</span><span>·</span><span>Activa recientemente</span></div>
       <p class="p-bio clamp" id="bio">${esc(c.bio)}</p>
       <button class="more-link hidden" id="bio-more">Ver más</button>
-
-      <div class="sub-box">
-        ${state.active ? `
-          <div class="sub-active">
-            <div><div class="sub-label" style="margin-bottom:.2rem">Suscrito</div>
-              <div class="small">Te quedan <b>${daysLeft} día${daysLeft === 1 ? "" : "s"}</b> · hasta el ${fdate(state.sub.current_period_end)}</div></div>
-            <a class="btn btn-soft btn-sm" href="#/cuenta">Renovar</a>
-          </div>` : `
-          <div class="sub-label">Suscripción</div>
-          <button class="sub-btn" data-subscribe><span>SUSCRIBIRSE</span><small>${mxn(CONFIG.priceMxn)} al mes</small></button>
-          <div class="sub-perks">
-            <span>${ic("check", "ic-xs")} Acceso total</span><span>${ic("check", "ic-xs")} Sin renovación automática</span>
-            <span>${ic("card", "ic-xs")} Tarjeta u OXXO</span></div>`}
-      </div>
+      <div style="height:1.1rem"></div>
     </div>
     <nav class="tabs" aria-label="Contenido">
       <a class="tab ${tab === "posts" ? "active" : ""}" href="#/">${num(s.posts)} Publicaciones</a>
