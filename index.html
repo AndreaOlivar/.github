@@ -516,7 +516,7 @@
 <nav class="bottom-nav" id="bottom-nav" aria-label="Navegación principal"></nav>
 
 <div id="scroll-hint" aria-hidden="true">
-  <span>Desliza para ver el contenido</span>
+  <span id="scroll-hint-text">Desliza para ver el contenido</span>
   <div class="scroll-hint-circulo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
 </div>
 
@@ -1052,9 +1052,10 @@ let hintTimers = [];
 function onHintScroll() {
   if (Math.max(window.scrollY, document.documentElement.scrollTop) > 150) showScrollHint(false);
 }
-function showScrollHint(show) {
+function showScrollHint(show, text = "Desliza para ver el contenido") {
   const hint = $("#scroll-hint");
   if (!hint) return;
+  $("#scroll-hint-text").textContent = text;
   hintTimers.forEach(clearTimeout); hintTimers = [];
   document.removeEventListener("scroll", onHintScroll, true);
   hint.classList.remove("visible", "solo-flecha");
@@ -1347,6 +1348,8 @@ async function viewSubscription(_p, alive) {
     </article>
   </div>`;
 
+  showScrollHint(true, "Desliza para ver más información");
+
   // El botón de esta sección sí abre el pago de Mercado Pago.
   $$("[data-checkout]", app).forEach((b) => b.addEventListener("click", () => {
     if (!state.user) return go("#/registro?next=/suscripcion");
@@ -1535,7 +1538,8 @@ async function viewAccount(_p, alive) {
     </div>
   </div>`;
 
-  $("#pay").addEventListener("click", (e) => startCheckout(e.currentTarget, $("#pay-err")));
+  // Suscribirse / Renovar desde Mi cuenta → sección Suscripción (ahí está toda la información y el pago).
+  $("#pay").addEventListener("click", () => go("#/suscripcion"));
   $("#logout").addEventListener("click", async () => { await sb.auth.signOut(); await loadSession(); go("#/"); });
   $("#fu").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2206,11 +2210,15 @@ function initGate() {
   $("#gate-ok").addEventListener("click", () => {
     try { localStorage.setItem("age_ok_v1", "1"); } catch { /* sin almacenamiento */ }
     gate.classList.add("hidden"); document.body.style.overflow = "";
-    if (currentRoute().path === "/") showScrollHint(true);
+    const p = currentRoute().path;
+    if (p === "/") showScrollHint(true);
+    if (p === "/suscripcion") showScrollHint(true, "Desliza para ver más información");
   });
 }
 
 async function boot() {
+  // Cada sección abre desde arriba (el navegador no restaura la posición al recargar).
+  try { history.scrollRestoration = "manual"; } catch { /* navegador antiguo */ }
   initGate();
   const q = new URLSearchParams(location.search);
   const pago = q.get("pago");
