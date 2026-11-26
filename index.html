@@ -1404,7 +1404,7 @@ async function viewRegister(params) {
     showError(err, ""); setBusy(btn, true, "Creando cuenta…");
     const { data, error } = await sb.auth.signUp({
       email: d.email.trim(), password: d.password,
-      options: { emailRedirectTo: BASE_URL, data: { username: d.username, adult_confirmed: true, accepted_terms: true } },
+      options: { emailRedirectTo: BASE_URL, data: { username: d.username, adult_confirmed: true, accepted_terms: true, signup_source: signupSource() } },
     });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
@@ -1633,7 +1633,7 @@ async function viewAdmin(params, alive) {
   await loadSite();
   if (!alive()) return;
   const tab = params.get("t") || "resumen";
-  const tabs = [["resumen", "Resumen"], ["usuarios", "Usuarios"], ["publicar", "Publicar"], ["lista", "Publicaciones"], ["perfil", "Perfil"], ["bitacora", "Bitácora"]];
+  const tabs = [["resumen", "Resumen"], ["usuarios", "Usuarios"], ["origen", "Origen"], ["publicar", "Publicar"], ["lista", "Publicaciones"], ["perfil", "Perfil"], ["bitacora", "Bitácora"]];
   app.innerHTML = `
   <div class="page">
     <div class="row between wrap-row" style="margin-bottom:1rem">
@@ -1645,6 +1645,7 @@ async function viewAdmin(params, alive) {
   </div>`;
   try {
     if (tab === "usuarios") return await adminUsers(alive);
+    if (tab === "origen") return await adminSources(alive);
     if (tab === "publicar") return adminPublish();
     if (tab === "lista") return await adminList(alive);
     if (tab === "perfil") return adminProfile();
@@ -1761,6 +1762,84 @@ async function adminOverview(alive) {
   adminTimer = setInterval(() => { if (!alive()) return stopAdminTimer(); if (!$(".drawer-bg")) draw().catch(() => {}); }, 30000);
 }
 
+// ─── Origen del tráfico ───────────────────────────────────
+const sourcesState = { days: 30 };
+async function adminSources(alive) {
+  const pct = (a, b) => (b ? `${Math.round((a / b) * 1000) / 10}%` : "—");
+  const base = location.origin + location.pathname;
+  const presets = [["x", "X (Twitter)"], ["reddit", "Reddit"], ["telegram", "Telegram"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["facebook", "Facebook"], ["whatsapp", "WhatsApp"]];
+  const draw = async () => {
+    const rows = await rpc("admin_traffic_sources", { p_days: sourcesState.days });
+    if (!alive()) return;
+    const t = rows.reduce((a, r) => ({ v: a.v + r.visits, s: a.s + r.signups, b: a.b + r.buyers, m: a.m + Number(r.revenue) }), { v: 0, s: 0, b: 0, m: 0 });
+    const maxRev = Math.max(1, ...rows.map((r) => Number(r.revenue)));
+    const maxSign = Math.max(1, ...rows.map((r) => r.signups));
+    $("#src-report").innerHTML = `
+      <div class="kpis" style="margin-bottom:1rem">
+        <div class="card kpi"><b>${num(t.v)}</b><span>Visitas</span></div>
+        <div class="card kpi"><b>${num(t.s)}</b><span>Registros</span><small>${pct(t.s, t.v)} de las visitas</small></div>
+        <div class="card kpi"><b>${num(t.b)}</b><span>Compradores</span><small>${pct(t.b, t.s)} de los registros</small></div>
+        <div class="card kpi"><b>${mxn(t.m)}</b><span>Ingresos</span></div>
+      </div>
+      ${rows.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Red</th><th>Visitas</th><th>Registros</th><th>Compradores</th><th class="hide-m">Pagos</th><th>Ingresos</th></tr></thead>
+        <tbody>${rows.map((r) => `<tr>
+          <td class="bold small">${esc(srcLabel(r.src))}</td>
+          <td>${num(r.visits)}</td>
+          <td><b>${num(r.signups)}</b><div class="xs mute">${pct(r.signups, r.visits)}</div>
+            <div class="progress" style="height:4px;margin-top:4px;width:80px"><i style="width:${(r.signups / maxSign) * 100}%;background:#22c55e"></i></div></td>
+          <td><b>${num(r.buyers)}</b><div class="xs mute">${pct(r.buyers, r.signups)}</div></td>
+          <td class="hide-m">${num(r.payments)}</td>
+          <td><b>${mxn(r.revenue)}</b>
+            <div class="progress" style="height:4px;margin-top:4px;width:90px"><i style="width:${(Number(r.revenue) / maxRev) * 100}%"></i></div></td>
+        </tr>`).join("")}</tbody></table></div>`
+        : `<div class="empty">${ic("share")}<p>Aún no hay visitas en este periodo. Comparte tus links de abajo para empezar a medir.</p></div>`}
+      <p class="xs mute" style="margin-top:.8rem">Registros y pagos se acreditan a la red por la que la persona llegó <b>la primera vez</b> (aunque se registre días después). "Directo" = abrió el link sin etiqueta o desde una app que no dice de dónde viene.</p>`;
+  };
+
+  $("#admin-body").innerHTML = `
+    <div class="card pad" style="margin-bottom:1rem">
+      <div class="row between wrap-row" style="margin-bottom:1rem">
+        <h2 class="section-h">¿De dónde llega tu gente?</h2>
+        <div class="chips" id="src-days">${[[7, "7 días"], [30, "30 días"], [90, "90 días"], [0, "Todo"]].map(([d, l]) =>
+          `<button class="chip ${sourcesState.days === d ? "on" : ""}" data-d="${d}">${l}</button>`).join("")}</div>
+      </div>
+      <div id="src-report"><div class="loading" style="min-height:20vh"><div class="spinner"></div></div></div>
+    </div>
+    <div class="card pad">
+      <h2 class="section-h">Tus links para cada red</h2>
+      <p class="small mute" style="margin:.3rem 0 1rem">Usa en cada red <b>su propio link</b> (en la biografía, en tus publicaciones, en tu canal…). Así sabrás exactamente cuál te trae más suscriptores.</p>
+      <div id="src-links">${presets.map(([k, l]) => `
+        <div class="list-row"><div class="grow" style="min-width:0"><div class="small bold">${esc(srcLabel(k))}</div>
+          <div class="xs mute" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(base)}?src=${k}</div></div>
+          <button class="btn btn-line btn-sm" data-copy="${esc(base)}?src=${k}">Copiar</button></div>`).join("")}
+      </div>
+      <div class="row" style="margin-top:1rem">
+        <input class="input grow" id="src-custom" maxlength="40" placeholder="Otro: ej. youtube, influencer1, anuncio-oct" style="min-height:40px">
+        <button class="btn btn-accent btn-sm" id="src-make">Crear link</button>
+      </div>
+      <div id="src-custom-out" style="margin-top:.6rem"></div>
+    </div>`;
+
+  $("#src-days").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-d]"); if (!b) return;
+    sourcesState.days = Number(b.dataset.d);
+    $$(".chip", $("#src-days")).forEach((c) => c.classList.toggle("on", c === b));
+    draw().catch((x) => toast(x.message));
+  });
+  const copy = async (text) => { try { await navigator.clipboard.writeText(text); toast("Link copiado ✓"); } catch { prompt("Copia el link:", text); } };
+  $("#admin-body").addEventListener("click", (e) => { const c = e.target.closest("[data-copy]"); if (c) copy(c.dataset.copy); });
+  $("#src-make").addEventListener("click", () => {
+    const v = cleanSrc($("#src-custom").value.replace(/\s+/g, "-"));
+    if (!v) return toast("Usa solo letras, números, puntos o guiones (máx. 40)");
+    const link = `${base}?src=${v}`;
+    $("#src-custom-out").innerHTML = `<div class="list-row"><div class="grow" style="min-width:0"><div class="small bold">${esc(srcLabel(v))}</div>
+      <div class="xs mute" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(link)}</div></div>
+      <button class="btn btn-line btn-sm" data-copy="${esc(link)}">Copiar</button></div>`;
+  });
+  await draw();
+}
+
 // ─── Usuarios ─────────────────────────────────────────────
 const usersState = { q: "", filter: "all", sort: "recent", page: 0, size: 25 };
 async function adminUsers(alive) {
@@ -1768,7 +1847,7 @@ async function adminUsers(alive) {
   $("#admin-body").innerHTML = `
     <div class="card pad">
       <div class="toolbar">
-        <input class="input grow" id="u-q" type="search" placeholder="Buscar por usuario, correo o ID…" value="${esc(usersState.q)}" style="min-width:200px">
+        <input class="input grow" id="u-q" type="search" placeholder="Buscar por usuario, correo, ID u origen (ej. reddit)…" value="${esc(usersState.q)}" style="min-width:200px">
         <select class="input" id="u-sort" style="width:auto">
           <option value="recent">Más recientes</option><option value="last_seen">Última conexión</option>
           <option value="paid">Más pagado</option><option value="likes">Más me gusta</option><option value="username">Nombre (A–Z)</option>
@@ -1786,7 +1865,7 @@ async function adminUsers(alive) {
     const pages = Math.max(1, Math.ceil(res.total / usersState.size));
     $("#u-table").innerHTML = res.rows.length ? `
       <div class="table-wrap"><table class="utable">
-        <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Registro</th></tr></thead>
+        <thead><tr><th>Usuario</th><th>Conexión</th><th>Suscripción</th><th class="hide-m">Pagado</th><th class="hide-m">Me gusta</th><th class="hide-m">Origen</th><th class="hide-m">Registro</th></tr></thead>
         <tbody>${res.rows.map((u) => { const pr = presence(u.last_seen_at); return `
           <tr data-user="${esc(u.id)}">
             <td><div class="u-cell"><div class="initial">${esc(initialOf(u.username))}</div><div style="min-width:0">
@@ -1796,6 +1875,7 @@ async function adminUsers(alive) {
             <td>${premiumPill(u.sub_end)}</td>
             <td class="hide-m"><b>${mxn(u.total_paid)}</b><div class="xs mute">${num(u.payments_count)} pago(s)</div></td>
             <td class="hide-m">${num(u.likes_given)}</td>
+            <td class="hide-m small">${esc(srcLabel(u.signup_source || "directo"))}</td>
             <td class="hide-m"><span class="small">${fdate(u.created_at)}</span></td>
           </tr>`; }).join("")}</tbody></table></div>
       <div class="pager"><span class="small mute">${num(res.total)} usuario(s) · página ${usersState.page + 1} de ${pages}</span>
@@ -1858,6 +1938,7 @@ async function openUserDrawer(id, onChange) {
         <div class="info-grid">
           <div><span>Correo</span><b>${esc(u.email)}</b></div>
           <div><span>Aceptó términos</span><b>${fdatetime(u.accepted_terms_at)}</b></div>
+          <div><span>Llegó desde</span><b>${esc(srcLabel(u.signup_source || "directo"))}</b></div>
           <div><span>Registro</span><b>${fdatetime(u.created_at)}</b></div>
           <div><span>Último inicio de sesión</span><b>${fdatetime(u.last_sign_in_at)}</b></div>
           <div><span>Última conexión</span><b>${fdatetime(u.last_seen_at)}</b></div>
@@ -2216,7 +2297,59 @@ function initGate() {
   });
 }
 
+// ═══════════════ Rastreo de origen ═══════════════
+// De qué red llega cada visita: ?src=x en el link, o se adivina por la página anterior.
+// Se recuerda el PRIMER origen (30 días) para acreditarle el registro y los pagos.
+// Solo se guarda el nombre de la red; nada personal.
+const SOURCE_KEY = "src_first_v1";
+const REF_MAP = [
+  [/(^|\.)(mercadopago|mercadolibre)\./, null],            // regreso del pago: no es una visita nueva
+  [/(^|\.)(t\.co|twitter\.com|x\.com)$/, "x"],
+  [/(^|\.)reddit\.com$/, "reddit"],
+  [/(^|\.)(t\.me|telegram\.org|telegram\.me)$/, "telegram"],
+  [/(^|\.)instagram\.com$/, "instagram"],
+  [/(^|\.)tiktok\.com$/, "tiktok"],
+  [/(^|\.)(facebook\.com|fb\.com|messenger\.com)$/, "facebook"],
+  [/(^|\.)(whatsapp\.com|wa\.me)$/, "whatsapp"],
+  [/(^|\.)youtube\.com$/, "youtube"],
+  [/(^|\.)google\./, "google"],
+  [/(^|\.)bing\.com$/, "bing"],
+];
+const cleanSrc = (s) => { const v = String(s ?? "").trim().toLowerCase(); return /^[a-z0-9._-]{1,40}$/.test(v) ? v : null; };
+function detectSource() {
+  const q = new URLSearchParams(location.search);
+  const fromUrl = cleanSrc(q.get("src") || q.get("utm_source"));
+  if (fromUrl) return { src: fromUrl };
+  try {
+    const h = new URL(document.referrer).hostname.replace(/^www\./, "");
+    if (h && h !== location.hostname) {
+      for (const [re, name] of REF_MAP) if (re.test(h)) return name ? { src: name } : { skip: true };
+      return { src: cleanSrc(h.replace(/[^a-z0-9.-]/gi, "").slice(0, 40)) || "otro" };
+    }
+  } catch { /* sin página anterior */ }
+  return { src: null };
+}
+function captureSource() {
+  const now = detectSource();
+  if (now.skip) return;
+  let first = null;
+  try { first = JSON.parse(localStorage.getItem(SOURCE_KEY) || "null"); } catch { /* sin almacenamiento */ }
+  if ((!first || Date.now() - first.t > 30 * 86400000) && now.src) {
+    first = { s: now.src, t: Date.now() };
+    try { localStorage.setItem(SOURCE_KEY, JSON.stringify(first)); } catch { /* sin almacenamiento */ }
+  }
+  let counted = false;
+  try { counted = sessionStorage.getItem("visit_tracked_v1") === "1"; sessionStorage.setItem("visit_tracked_v1", "1"); } catch { /* sin almacenamiento */ }
+  if (!counted) sb.rpc("track_visit", { p_src: now.src || first?.s || "directo" }).then(() => {}, () => {});
+}
+const signupSource = () => { try { return JSON.parse(localStorage.getItem(SOURCE_KEY) || "null")?.s || "directo"; } catch { return "directo"; } };
+const SRC_LABEL = { x: "𝕏 X (Twitter)", reddit: "👽 Reddit", telegram: "✈️ Telegram", instagram: "📸 Instagram", tiktok: "🎵 TikTok",
+  facebook: "📘 Facebook", whatsapp: "💬 WhatsApp", youtube: "▶️ YouTube", google: "🔎 Google", bing: "🔎 Bing",
+  directo: "🔗 Directo / desconocido", otro: "❔ Otro" };
+const srcLabel = (s) => SRC_LABEL[s] ?? `🌐 ${s}`;
+
 async function boot() {
+  captureSource();
   // Cada sección abre desde arriba (el navegador no restaura la posición al recargar).
   try { history.scrollRestoration = "manual"; } catch { /* navegador antiguo */ }
   initGate();
