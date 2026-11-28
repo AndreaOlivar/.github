@@ -28,6 +28,9 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.paypal.com">
+<link rel="preconnect" href="https://www.paypalobjects.com">
+<link rel="dns-prefetch" href="https://c.paypal.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   /* ═══════════════ Tokens ═══════════════ */
@@ -1650,9 +1653,39 @@ async function paypalErrMsg(error) {
   try { const code = (await error.context.json()).error; if (PAYPAL_ERR[code]) return tr(PAYPAL_ERR[code]); } catch { /* sin cuerpo */ }
   return tr("No se pudo completar el pago con PayPal. Intenta de nuevo.");
 }
+// La orden se prepara en cuanto aparecen los botones (no al hacer clic), así el
+// formulario de tarjeta abre al instante. Se reutiliza 2 h en esta pestaña para no
+// crear una orden nueva cada vez que se entra a Suscripción.
+const PP_ORDER_KEY = "pp_order_v1", PP_ORDER_TTL = 2 * 3600e3;
+let ppOrder = null; // { uid, promise }
+function prefetchPayPalOrder() {
+  const uid = state.user?.id;
+  if (!uid) return Promise.reject(new Error(tr("Tu sesión expiró. Vuelve a iniciar sesión.")));
+  if (ppOrder?.uid === uid) return ppOrder.promise;
+  try {
+    const c = JSON.parse(sessionStorage.getItem(PP_ORDER_KEY) || "null");
+    if (c?.uid === uid && /^[A-Z0-9]{10,40}$/.test(c.id) && Date.now() - c.at < PP_ORDER_TTL) {
+      ppOrder = { uid, promise: Promise.resolve(c.id) };
+      return ppOrder.promise;
+    }
+  } catch { /* sin almacenamiento */ }
+  const promise = sb.functions.invoke("paypal-create-order", { method: "POST" }).then(async ({ data, error }) => {
+    if (error || !data?.id) throw new Error(await paypalErrMsg(error));
+    try { sessionStorage.setItem(PP_ORDER_KEY, JSON.stringify({ uid, id: data.id, at: Date.now() })); } catch { /* sin almacenamiento */ }
+    return data.id;
+  });
+  ppOrder = { uid, promise };
+  promise.catch(() => { if (ppOrder?.promise === promise) ppOrder = null; });
+  return promise;
+}
+function forgetPayPalOrder() {
+  ppOrder = null;
+  try { sessionStorage.removeItem(PP_ORDER_KEY); } catch { /* sin almacenamiento */ }
+}
 async function mountPayPal(selector, errEl) {
   const box = $(selector);
   if (!box) return;
+  prefetchPayPalOrder().catch(() => { /* se reintenta al hacer clic */ });
   try {
     const paypal = await loadPayPal();
     if (!document.body.contains(box)) return;
@@ -1661,11 +1694,11 @@ async function mountPayPal(selector, errEl) {
       style: { layout: "vertical", color: "gold", shape: "pill", label: "pay", height: 48 },
       createOrder: async () => {
         showError(errEl, "");
-        const { data, error } = await sb.functions.invoke("paypal-create-order", { method: "POST" });
-        if (error || !data?.id) { const m = await paypalErrMsg(error); showError(errEl, m); throw new Error(m); }
-        return data.id;
+        try { return await prefetchPayPalOrder(); }
+        catch (e) { showError(errEl, e.message); throw e; }
       },
       onApprove: async (d) => {
+        forgetPayPalOrder(); // esta orden ya se usó; la próxima vez se crea otra
         box.style.opacity = ".5"; box.style.pointerEvents = "none";
         const { data, error } = await sb.functions.invoke("paypal-capture-order", { method: "POST", body: { orderID: d.orderID } });
         box.style.opacity = ""; box.style.pointerEvents = "";
@@ -1675,7 +1708,7 @@ async function mountPayPal(selector, errEl) {
         go("#/");
       },
       onCancel: () => showError(errEl, tr("Cancelaste el pago. No se hizo ningún cargo.")),
-      onError: () => showError(errEl, tr("No se pudo completar el pago con PayPal. Intenta de nuevo.")),
+      onError: () => { forgetPayPalOrder(); showError(errEl, tr("No se pudo completar el pago con PayPal. Intenta de nuevo.")); },
     }).render(selector);
   } catch {
     box.innerHTML = `<div class="alert alert-bad">${tr("PayPal no está disponible en este momento. Intenta más tarde.")}</div>`;
