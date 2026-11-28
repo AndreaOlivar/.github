@@ -16,7 +16,7 @@
   font-src https://fonts.gstatic.com;
   img-src 'self' data: blob: https://dakhnqriwbzihlzhtfcb.supabase.co https://www.paypalobjects.com https://*.paypal.com;
   media-src 'self' blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
-  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com;
+  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com https://ipapi.co https://api.mymemory.translated.net;
   frame-src https://www.paypal.com https://*.paypal.com;
   base-uri 'self'; form-action 'self'; object-src 'none'">
 <style id="antiframe">html { display: none !important; }</style>
@@ -488,8 +488,6 @@
   /* color-scheme: light evita el fondo blanco del iframe de PayPal en modo oscuro */
   .paypal-box { min-height: 52px; position: relative; z-index: 1; color-scheme: light; }
   .pay-opt .subp-cta { font-size: .95rem; }
-  .lang-btn { border: 1px solid var(--line); background: var(--bg-2); color: var(--text-2); border-radius: 999px; padding: .3rem .65rem; font: 700 .75rem var(--font); cursor: pointer; white-space: nowrap; }
-  .lang-btn:hover { color: var(--text); border-color: var(--mute); }
   .legal { max-width: 720px; }
   .legal h2 { font-size: 1.02rem; font-weight: 800; margin: 1.6rem 0 .4rem; }
   .legal p, .legal li { color: var(--text-2); }
@@ -563,21 +561,44 @@ const CONFIG = {
 };
 const PAGE_SIZE = 12;
 
-// ═══════════════ Idioma y región ═══════════════
-// Idioma: el que eligió el visitante (botón ES/EN) o el de su navegador.
-// Región: México (zona horaria de México) paga con Mercado Pago en MXN;
-// el resto del mundo ve PayPal en USD primero (puede usar cualquiera de los dos).
-const LANG = (() => {
-  try { const s = localStorage.getItem("lang_v1"); if (s === "es" || s === "en") return s; } catch { /* sin almacenamiento */ }
-  return (navigator.languages?.[0] || navigator.language || "es").toLowerCase().startsWith("es") ? "es" : "en";
+// ═══════════════ País, idioma y forma de pago (automático) ═══════════════
+// Igual que NetGamer: el país se detecta por la IP del visitante (ipapi.co).
+//  · México            → español · Mercado Pago ($79 MXN) primero
+//  · Países de habla hispana → español · PayPal ($4.99 USD) primero
+//  · Resto del mundo   → inglés  · PayPal ($4.99 USD) primero
+// El resultado se guarda 24 h en el navegador para no preguntar en cada visita.
+// Si la detección falla (bloqueador, sin internet), se usa la zona horaria y el idioma del navegador.
+const SPANISH_COUNTRIES = new Set(["MX", "ES", "AR", "BO", "CL", "CO", "CR", "CU", "DO", "EC", "SV", "GQ", "GT", "HN", "NI", "PA", "PY", "PE", "PR", "UY", "VE"]);
+const COUNTRY = await (async () => {
+  const KEY = "geo_v1";
+  try {
+    const c = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (c && /^[A-Z]{2}$/.test(c.cc) && Date.now() - c.t < 864e5) return c.cc;
+  } catch { /* sin almacenamiento */ }
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 2500);
+    const d = await fetch("https://ipapi.co/json/", { signal: ctl.signal, credentials: "omit" }).then((r) => r.json());
+    clearTimeout(timer);
+    const cc = String(d?.country_code || "");
+    if (/^[A-Z]{2}$/.test(cc)) {
+      try { localStorage.setItem(KEY, JSON.stringify({ cc, t: Date.now() })); } catch { /* sin almacenamiento */ }
+      return cc;
+    }
+  } catch { /* sin respuesta: se usa el plan B */ }
+  return null;
 })();
 const REGION = (() => {
+  if (COUNTRY) return COUNTRY === "MX" ? "MX" : "INT";
   try { if (/^America\/(Mexico_City|Cancun|Merida|Monterrey|Matamoros|Chihuahua|Ciudad_Juarez|Ojinaga|Mazatlan|Bahia_Banderas|Hermosillo|Tijuana)$/.test(Intl.DateTimeFormat().resolvedOptions().timeZone)) return "MX"; } catch { /* navegador antiguo */ }
   return (navigator.languages || [navigator.language]).some((l) => /-mx$/i.test(l || "")) ? "MX" : "INT";
 })();
+const LANG = COUNTRY
+  ? (SPANISH_COUNTRIES.has(COUNTRY) ? "es" : "en")
+  : (REGION === "MX" || (navigator.languages?.[0] || navigator.language || "es").toLowerCase().startsWith("es") ? "es" : "en");
 const LOCALE = LANG === "es" ? "es-MX" : "en-US";
 document.documentElement.lang = LANG === "es" ? "es-MX" : "en";
-function setLang(l) { try { localStorage.setItem("lang_v1", l); } catch { /* sin almacenamiento */ } location.reload(); }
+try { localStorage.removeItem("lang_v1"); } catch { /* sin almacenamiento */ }
 
 // Traducción: tr("texto en español", { variables }) → español o inglés según LANG.
 // Las traducciones al inglés están en EN (abajo). Si falta alguna, se muestra en español.
@@ -840,8 +861,73 @@ const usernameError = (s) => {
   if (n > 30) return tr("El nombre de usuario puede tener máximo 30 caracteres.");
   return "";
 };
+// Descripción de una publicación en el idioma del visitante (si no hay traducción, en español).
+const captionOf = (p) => (LANG === "en" && p.caption_en) || p.caption || "";
+
+/**
+ * Traducción automática español → inglés (solo la usa el admin al escribir).
+ * Servicio gratuito MyMemory, sin clave. Divide el texto en trozos de ≤ 450 caracteres.
+ * Si falla, lanza error y el admin puede escribir la traducción a mano.
+ */
+async function autoTranslate(text) {
+  const src = String(text ?? "").trim();
+  if (!src) return "";
+  if (!/\p{L}/u.test(src)) return src; // solo emojis o símbolos: no hay nada que traducir
+  const pieces = [];
+  for (const part of src.match(/[^.!?¡¿\n]+[.!?\n]*|[.!?¡¿\n]+/g) ?? [src]) {
+    if (part.length <= 450) { pieces.push(part); continue; }
+    let cur = "";
+    for (const w of part.split(/(\s+)/)) { if ((cur + w).length > 450 && cur) { pieces.push(cur); cur = ""; } cur += w; }
+    if (cur) pieces.push(cur);
+  }
+  const chunks = [];
+  let cur = "";
+  for (const p of pieces) { if ((cur + p).length > 450 && cur) { chunks.push(cur); cur = ""; } cur += p; }
+  if (cur) chunks.push(cur);
+  const out = [];
+  for (const c of chunks) {
+    const core = c.trim();
+    if (!/\p{L}/u.test(core)) { out.push(c); continue; }
+    const r = await fetch(`https://api.mymemory.translated.net/get?langpair=es|en&q=${encodeURIComponent(core)}`, { credentials: "omit" });
+    const d = await r.json();
+    let t = String(d?.responseData?.translatedText ?? "");
+    if (Number(d?.responseStatus) !== 200 || !t || /MYMEMORY WARNING|QUERY LENGTH|INVALID LANGUAGE/i.test(t)) throw new Error("translate");
+    t = new DOMParser().parseFromString(t, "text/html").documentElement.textContent; // &#39; → '
+    out.push(c.replace(core, () => t));
+  }
+  return out.join("").trim().slice(0, 2000);
+}
+
+/** Conecta un campo en español con su campo en inglés: al escribir, se traduce solo
+ *  (salvo que el admin haya corregido el inglés a mano). */
+function linkTranslation(esEl, enEl, statusEl) {
+  let touched = false, seq = 0, timer;
+  enEl.addEventListener("input", () => { touched = enEl.value.trim() !== ""; });
+  esEl.addEventListener("input", () => {
+    if (touched) return;
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const my = ++seq;
+      if (!esEl.value.trim()) { enEl.value = ""; statusEl.textContent = ""; return; }
+      statusEl.textContent = "Traduciendo…";
+      try {
+        const t = await autoTranslate(esEl.value);
+        if (my !== seq || touched) return;
+        enEl.value = t; statusEl.textContent = "✓ Traducido automáticamente · puedes corregirlo";
+      } catch { if (my === seq) statusEl.textContent = "No se pudo traducir ahora; escríbelo a mano o se intentará al guardar."; }
+    }, 800);
+  });
+  return {
+    // Al guardar: si el inglés quedó vacío, se intenta traducir una última vez.
+    async value() {
+      if (enEl.value.trim() || !esEl.value.trim()) return enEl.value.trim() || null;
+      try { return (await autoTranslate(esEl.value)) || null; } catch { return null; }
+    },
+  };
+}
+
 // Primera letra/emoji de un nombre (funciona con acentos y emojis).
-const initialOf = (s) => (Array.from(String(s ?? "").trim())[0] ?? "?").toUpperCase();
+const initialOf =(s) => (Array.from(String(s ?? "").trim())[0] ?? "?").toUpperCase();
 const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n) + " MXN";
 const usd = (n) => "$" + Number(n).toFixed(2) + " USD";
 const money = (n, cur) => (cur === "USD" ? usd(n) : mxn(n));
@@ -980,7 +1066,6 @@ function renderChrome() {
     ...(state.isAdmin ? [["/admin", "shield", "Admin"]] : []),
   ];
   const subCta = state.active ? "" : `<button class="btn btn-accent btn-block" data-subscribe>${tr("Suscribirme")} · ${priceLabel()}</button>`;
-  const langBtn = `<button class="lang-btn" data-lang="${LANG === "es" ? "en" : "es"}" title="${LANG === "es" ? "English" : "Español"}">🌐 ${LANG === "es" ? "EN" : "ES"}</button>`;
 
   $("#side").innerHTML = `
     <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span></a>
@@ -990,12 +1075,11 @@ function renderChrome() {
       ${state.user ? `<a class="me-chip" href="#/cuenta" title="${tr("Mi cuenta")}"><div class="initial">${esc(initialOf(state.profile?.username))}</div>
         <div class="grow side-cta"><div class="bold small">${esc(state.profile?.username ?? "")}</div><div class="xs mute">${state.active ? tr("Suscriptor") : tr("Sin suscripción")}</div></div></a>`
       : `<a class="btn btn-line btn-block side-cta" href="#/registro">${tr("Crear cuenta")}</a>`}
-      <div class="side-cta" style="text-align:center">${langBtn}</div>
     </div>`;
 
   $("#topbar").innerHTML = `
     <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span>${VERIFIED}</a>
-    <div class="row" style="gap:.4rem">${langBtn}
+    <div class="row" style="gap:.4rem">
     ${state.active ? `<span class="pill pill-ok">${ic("check", "ic-xs")} ${tr("Suscrito")}</span>`
       : state.user ? `<button class="btn btn-accent btn-sm" data-subscribe>${tr("Suscribirme")}</button>`
       : `<a class="btn btn-accent btn-sm" href="#/registro">${tr("Crear cuenta")}</a>`}</div>`;
@@ -1005,7 +1089,6 @@ function renderChrome() {
   const legal = `
     <a href="#/legal/terminos">${tr("Términos")}</a><a href="#/legal/privacidad">${tr("Privacidad")}</a>
     <a href="#/legal/reembolsos">${tr("Reembolsos")}</a><a href="#/legal/aviso-ia">${tr("Aviso legal")}</a>
-    <a href="#" data-lang="${LANG === "es" ? "en" : "es"}">🌐 ${LANG === "es" ? "English" : "Español"}</a>
     <span>© ${new Date().getFullYear()} ${esc(c.name)}</span>`;
   $("#foot-links").innerHTML = legal;
 
@@ -1035,14 +1118,6 @@ function renderChrome() {
     </div>
     <div class="legal-links">${legal}</div>`;
 }
-
-// Botón de idioma (ES / EN).
-document.addEventListener("click", (e) => {
-  const l = e.target.closest("[data-lang]");
-  if (!l) return;
-  e.preventDefault();
-  setLang(l.dataset.lang);
-});
 
 // Botones "Suscribirme" / "Desbloquear" en cualquier parte: llevan a la sección Suscripción.
 document.addEventListener("click", (e) => {
@@ -1122,7 +1197,7 @@ let lbItems = [];
 // filter: "all" (todas), "free" (solo gratis) o "paid" (solo de pago).
 async function fetchPosts(from, filter = "all", size = PAGE_SIZE) {
   let q = sb.from("posts")
-    .select("id, caption, is_free, published_at, post_media(id, storage_path, preview_path, kind, width, height, sort)")
+    .select("id, caption, caption_en, is_free, published_at, post_media(id, storage_path, preview_path, kind, width, height, sort)")
     .order("published_at", { ascending: false }).range(from, from + size - 1);
   if (filter === "free") q = q.eq("is_free", true);
   if (filter === "paid") q = q.eq("is_free", false);
@@ -1248,7 +1323,7 @@ function renderPost(p, ctx) {
       <div class="post-who"><div class="n">${esc(c.name)} ${VERIFIED}</div><div class="h">${esc(CONFIG.handle)}</div></div>
       <time class="post-time" datetime="${esc(shownDate(p.published_at).toISOString())}" title="${esc(shownDate(p.published_at).toLocaleString(LOCALE))}">${timeAgo(shownDate(p.published_at))}</time>
     </header>
-    ${p.caption ? `<p class="post-text">${esc(p.caption)}</p>` : ""}
+    ${captionOf(p) ? `<p class="post-text">${esc(captionOf(p))}</p>` : ""}
     ${mediaHtml}
     <footer class="post-foot">
       <button class="act ${liked ? "liked" : ""}" data-like="${esc(p.id)}" aria-pressed="${liked}" aria-label="${tr("Me gusta")}">${ic("heart")}<span>${num(p.likes_total)}</span></button>
@@ -1898,10 +1973,6 @@ async function viewAccount(_p, alive) {
           </form>
         </div>
         <div class="card pad stack">
-          <h2 class="section-h">${tr("Idioma")}</h2>
-          <div class="seg"><a class="${LANG === "es" ? "active" : ""}" href="#" data-lang="es">Español</a><a class="${LANG === "en" ? "active" : ""}" href="#" data-lang="en">English</a></div>
-        </div>
-        <div class="card pad stack">
           <h2 class="section-h">${tr("Seguridad")}</h2>
           <a class="btn btn-line btn-block" href="#/nueva-clave">${tr("Cambiar contraseña")}</a>
           <button class="btn btn-danger btn-block" id="logout">${ic("logout", "ic-sm")} ${tr("Cerrar sesión")}</button>
@@ -2401,6 +2472,9 @@ function adminPublish() {
       <form id="fp" class="stack">
         <div class="row" style="gap:.75rem;align-items:flex-start">${avatarImg("avatar-sm")}
           <textarea class="input grow" id="caption" maxlength="2000" placeholder="Escribe algo para tus suscriptores… (opcional)"></textarea></div>
+        <div><label class="label" for="caption-en">🌐 En inglés <span class="mute" style="font-weight:500">(se traduce solo · lo ven los visitantes de fuera de México)</span></label>
+          <textarea class="input" id="caption-en" maxlength="2000" placeholder="Se llena automáticamente al escribir la descripción" style="min-height:60px"></textarea>
+          <p class="hint" id="caption-st"></p></div>
         <label class="drop" id="drop"><input type="file" id="files" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple class="sr">
           ${ic("upload")}<div class="bold" style="margin-top:.4rem">Toca o arrastra fotos y videos</div><div class="xs mute">JPG, PNG, WEBP, MP4, WEBM · hasta 100 MB cada uno · puedes elegir varios</div></label>
         <div class="thumbs" id="thumbs"></div>
@@ -2418,6 +2492,7 @@ function adminPublish() {
 
   let selected = [];
   const input = $("#files"), drop = $("#drop"), thumbs = $("#thumbs");
+  const capEn = linkTranslation($("#caption"), $("#caption-en"), $("#caption-st"));
   const show = () => {
     thumbs.innerHTML = selected.map((f, i) => `<div class="thumb">${f.type.startsWith("image/")
       ? `<img src="${URL.createObjectURL(f)}" alt="">` : `<div class="vid">${ic("video")}<br>${esc(f.name.slice(0, 14))}</div>`}
@@ -2446,8 +2521,9 @@ function adminPublish() {
     const uploaded = [];
     try {
       const when = $("#when").value;
+      const caption_en = await capEn.value();
       const { error: pErr } = await sb.from("posts").insert({
-        id: postId, caption: $("#caption").value.trim() || null, is_free: $("#free").checked, is_spicy: $("#spicy").checked,
+        id: postId, caption: $("#caption").value.trim() || null, caption_en, is_free: $("#free").checked, is_spicy: $("#spicy").checked,
         published_at: when ? new Date(when).toISOString() : new Date().toISOString(),
       });
       if (pErr) throw pErr;
@@ -2497,13 +2573,15 @@ function adminProfile() {
         <p class="hint" style="margin-top:0">Portada recomendada: 1500 × 500 px. Foto de perfil: cuadrada. Se ven públicamente sin suscripción.</p>
         <div><label class="label" for="dn">Nombre visible</label><input class="input" id="dn" maxlength="60" value="${esc(state.settings?.display_name || CONFIG.name)}"></div>
         <div><label class="label" for="bio-in">Biografía</label><textarea class="input" id="bio-in" maxlength="1000">${esc(state.settings?.bio || CONFIG.bio)}</textarea></div>
-        <div><label class="label" for="bio-en">Biografía en inglés <span class="mute" style="font-weight:500">(la ven los visitantes con la web en inglés)</span></label>
-          <textarea class="input" id="bio-en" maxlength="1000" placeholder="Exclusive content I don't post anywhere else. New sets every week. 💋">${esc(state.settings?.bio_en || "")}</textarea></div>
+        <div><label class="label" for="bio-en">🌐 Biografía en inglés <span class="mute" style="font-weight:500">(se traduce sola al cambiar la de arriba · la ven los visitantes de fuera de México)</span></label>
+          <textarea class="input" id="bio-en" maxlength="1000" placeholder="Se llena automáticamente al escribir la biografía">${esc(state.settings?.bio_en || "")}</textarea>
+          <p class="hint" id="bio-st"></p></div>
         <div id="fb-err"></div>
         <button class="btn btn-accent btn-block" type="submit">Guardar perfil</button>
       </form>
     </div>`;
   let avFile = null, covFile = null;
+  const bioEn = linkTranslation($("#bio-in"), $("#bio-en"), $("#bio-st"));
   $("#av").addEventListener("change", (e) => { avFile = e.target.files[0] || null; if (avFile) $("#av-prev").innerHTML = `<img class="avatar-xl" src="${URL.createObjectURL(avFile)}" alt="">`; });
   $("#cov").addEventListener("change", (e) => { covFile = e.target.files[0] || null; if (covFile) $("#cov-prev").style.backgroundImage = `url('${URL.createObjectURL(covFile)}')`; });
 
@@ -2512,7 +2590,7 @@ function adminProfile() {
     const btn = e.currentTarget.querySelector("button[type=submit]"), err = $("#fb-err");
     setBusy(btn, true, "Guardando…"); showError(err, "");
     try {
-      const patch = { display_name: $("#dn").value.trim() || null, bio: $("#bio-in").value.trim() || null, bio_en: $("#bio-en").value.trim() || null, updated_at: new Date().toISOString() };
+      const patch = { display_name: $("#dn").value.trim() || null, bio: $("#bio-in").value.trim() || null, bio_en: await bioEn.value(), updated_at: new Date().toISOString() };
       const old = [];
       if (avFile) {
         const blob = await resizeImage(avFile, 640, true);
@@ -2542,7 +2620,7 @@ function adminProfile() {
 
 async function adminList(alive) {
   const [{ data: posts }, { data: meta }] = await Promise.all([
-    sb.from("posts").select("id, caption, is_free, published_at, post_media(storage_path, preview_path, kind)")
+    sb.from("posts").select("id, caption, caption_en, is_free, published_at, post_media(storage_path, preview_path, kind)")
       .order("published_at", { ascending: false }).limit(200),
     sb.rpc("admin_posts_meta"),
   ]);
@@ -2555,6 +2633,7 @@ async function adminList(alive) {
       <div class="thumbs-row">${p.post_media.slice(0, 3).map((x) => `<img src="${esc(publicUrl("previews", x.preview_path))}" alt="">`).join("")}</div>
       <div class="grow">
         <div class="small bold" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.is_spicy ? "🔥 " : ""}${esc(p.caption || "Sin descripción")}</div>
+        ${p.caption ? `<div class="xs mute" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🌐 ${p.caption_en ? esc(p.caption_en) : `<span style="color:var(--warn)">sin traducción (se muestra en español)</span>`}</div>` : ""}
         <div class="xs mute">${fdate(p.published_at)} · ${p.post_media.length} archivo(s) ·
           <b style="color:var(--text)">${num(m.base_likes + m.real_likes)} me gusta</b> (${num(m.base_likes)} base + ${num(m.real_likes)} reales)
           ${p.is_free ? ` · <b style="color:var(--accent)">Gratis</b>` : ""}${new Date(p.published_at) > new Date() ? ` · <b style="color:var(--warn)">Programada</b>` : ""}</div>
@@ -2562,6 +2641,7 @@ async function adminList(alive) {
       <button class="icon-btn" data-spicy="${esc(p.id)}" data-on="${m.is_spicy}" aria-pressed="${m.is_spicy}"
         title="${m.is_spicy ? "Quitar «muy atrevido» (vuelve a 20–100 base)" : "Marcar como muy atrevido (70–150 base)"}"
         style="${m.is_spicy ? "background:var(--accent-soft);border-color:var(--accent)" : "filter:grayscale(1);opacity:.6"}">🔥</button>
+      ${p.caption ? `<button class="icon-btn" data-tr="${esc(p.id)}" title="Editar descripción en inglés">🌐</button>` : ""}
       <button class="icon-btn" data-del="${esc(p.id)}" aria-label="Eliminar" style="color:var(--bad)">${ic("trash", "ic-sm")}</button>
     </div>`;
   }).join("") || `<div class="empty">${ic("image")}<p>Aún no hay publicaciones.</p></div>`}</div>`;
@@ -2571,6 +2651,18 @@ async function adminList(alive) {
     const { error } = await sb.from("posts").update({ is_spicy: on }).eq("id", b.dataset.spicy);
     if (error) { b.disabled = false; return toast("No se pudo cambiar"); }
     await loadSite(); toast(on ? "🔥 Marcada como muy atrevida" : "Marca quitada"); render();
+  }));
+  $$("[data-tr]").forEach((b) => b.addEventListener("click", async () => {
+    const post = posts.find((p) => p.id === b.dataset.tr);
+    b.disabled = true;
+    let suggestion = post.caption_en || "";
+    if (!suggestion) { try { suggestion = await autoTranslate(post.caption); } catch { /* sin traducción automática */ } }
+    b.disabled = false;
+    const v = prompt(`Descripción en inglés para:\n«${post.caption}»\n\n(Déjalo vacío para mostrar el texto en español)`, suggestion);
+    if (v === null) return;
+    const { error } = await sb.from("posts").update({ caption_en: v.trim().slice(0, 2000) || null }).eq("id", post.id);
+    if (error) return toast("No se pudo guardar");
+    await loadSite(); toast("Traducción guardada 🌐"); render();
   }));
   $$("[data-del]").forEach((b) => b.addEventListener("click", async () => {
     if (!confirm("¿Eliminar esta publicación y sus archivos? No se puede deshacer.")) return;
