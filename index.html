@@ -11,12 +11,13 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.paypal.com https://www.paypalobjects.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src https://fonts.gstatic.com;
-  img-src 'self' data: blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
+  img-src 'self' data: blob: https://dakhnqriwbzihlzhtfcb.supabase.co https://www.paypalobjects.com https://*.paypal.com;
   media-src 'self' blob: https://dakhnqriwbzihlzhtfcb.supabase.co;
-  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net;
+  connect-src https://dakhnqriwbzihlzhtfcb.supabase.co wss://dakhnqriwbzihlzhtfcb.supabase.co https://cdn.jsdelivr.net https://www.paypal.com https://*.paypal.com;
+  frame-src https://www.paypal.com https://*.paypal.com;
   base-uri 'self'; form-action 'self'; object-src 'none'">
 <style id="antiframe">html { display: none !important; }</style>
 <script>
@@ -483,6 +484,12 @@
   .mfa-box .qr { width: 210px; height: 210px; margin: 1rem auto; background: #fff; padding: 8px; border-radius: 14px; }
   .code-input { font-size: 1.5rem; letter-spacing: .45em; text-align: center; font-weight: 800; }
   .secret { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .8rem; background: var(--bg-2); border-radius: 8px; padding: .5rem .7rem; overflow-wrap: anywhere; user-select: all; }
+  .pay-opt-note { text-align: center; font-size: .78rem; color: var(--mute); margin-top: .45rem; font-weight: 600; }
+  /* color-scheme: light evita el fondo blanco del iframe de PayPal en modo oscuro */
+  .paypal-box { min-height: 52px; position: relative; z-index: 1; color-scheme: light; }
+  .pay-opt .subp-cta { font-size: .95rem; }
+  .lang-btn { border: 1px solid var(--line); background: var(--bg-2); color: var(--text-2); border-radius: 999px; padding: .3rem .65rem; font: 700 .75rem var(--font); cursor: pointer; white-space: nowrap; }
+  .lang-btn:hover { color: var(--text); border-color: var(--mute); }
   .legal { max-width: 720px; }
   .legal h2 { font-size: 1.02rem; font-weight: 800; margin: 1.6rem 0 .4rem; }
   .legal p, .legal li { color: var(--text-2); }
@@ -502,7 +509,7 @@
 </style>
 </head>
 <body>
-<noscript><p style="padding:2rem">Necesitas activar JavaScript para usar este sitio.</p></noscript>
+<noscript><p style="padding:2rem">Necesitas activar JavaScript para usar este sitio. · You need to enable JavaScript to use this site.</p></noscript>
 
 <div class="shell">
   <aside class="side" id="side"></aside>
@@ -546,11 +553,273 @@ const CONFIG = {
   handle: "@andreaolivar",
   bio: "Contenido exclusivo que no publico en ningún otro lugar. Sesiones nuevas cada semana. 💋",
   priceMxn: 79,
+  // Fuera de México se cobra con PayPal en dólares (debe coincidir con el secret PRICE_USD).
+  priceUsd: 4.99,
+  // ID público de la app de PayPal (el mismo de NetGamer). El "secret" NUNCA va aquí.
+  paypalClientId: "BAA_OdUNqQ1kMiEU8IuN0BxEhGvBkVlvCaWn9TqjIEFFzQuGUH1tSRYMCnzzEp4BMDMPZA12qKDjDwbL6Q",
   periodDays: 30,
   // Las publicaciones se muestran con esta ventaja: una recién subida dice "hace 1 hora".
   postAgeOffsetMinutes: 60,
 };
 const PAGE_SIZE = 12;
+
+// ═══════════════ Idioma y región ═══════════════
+// Idioma: el que eligió el visitante (botón ES/EN) o el de su navegador.
+// Región: México (zona horaria de México) paga con Mercado Pago en MXN;
+// el resto del mundo ve PayPal en USD primero (puede usar cualquiera de los dos).
+const LANG = (() => {
+  try { const s = localStorage.getItem("lang_v1"); if (s === "es" || s === "en") return s; } catch { /* sin almacenamiento */ }
+  return (navigator.languages?.[0] || navigator.language || "es").toLowerCase().startsWith("es") ? "es" : "en";
+})();
+const REGION = (() => {
+  try { if (/^America\/(Mexico_City|Cancun|Merida|Monterrey|Matamoros|Chihuahua|Ciudad_Juarez|Ojinaga|Mazatlan|Bahia_Banderas|Hermosillo|Tijuana)$/.test(Intl.DateTimeFormat().resolvedOptions().timeZone)) return "MX"; } catch { /* navegador antiguo */ }
+  return (navigator.languages || [navigator.language]).some((l) => /-mx$/i.test(l || "")) ? "MX" : "INT";
+})();
+const LOCALE = LANG === "es" ? "es-MX" : "en-US";
+document.documentElement.lang = LANG === "es" ? "es-MX" : "en";
+function setLang(l) { try { localStorage.setItem("lang_v1", l); } catch { /* sin almacenamiento */ } location.reload(); }
+
+// Traducción: tr("texto en español", { variables }) → español o inglés según LANG.
+// Las traducciones al inglés están en EN (abajo). Si falta alguna, se muestra en español.
+const EN = {
+  "Abriendo pago…": "Opening checkout…",
+  "Acceso a todo el contenido": "Access to all content",
+  "Acceso a todo el contenido · Sin renovación automática": "Access to all content · No auto-renewal",
+  "Acceso completo a todo el contenido": "Full access to all content",
+  "Acceso hasta el": "Access until",
+  "Acercar": "Zoom in",
+  "Activa": "Active",
+  "Activa recientemente": "Recently active",
+  "Activación inmediata": "Instant activation",
+  "Administrar": "Manage",
+  "Al entrar confirmas que eres mayor de edad y que ver este contenido es legal donde vives.": "By entering you confirm that you are of legal age and that viewing this content is legal where you live.",
+  "Al suscribirte aceptas los": "By subscribing you accept the",
+  "Alejar": "Zoom out",
+  "Algo salió mal al cargar esta página. Recarga e intenta de nuevo.": "Something went wrong loading this page. Please reload and try again.",
+  "Alta calidad con zoom": "High quality with zoom",
+  "Anterior": "Previous",
+  "Aprobado": "Approved",
+  "Aviso de privacidad": "Privacy Notice",
+  "Aviso legal": "Legal notice",
+  "Aún no hay pagos.": "No payments yet.",
+  "Aún no hay publicaciones": "No posts yet",
+  "Aún no tienes una suscripción.": "You don't have a subscription yet.",
+  "Bienvenido de vuelta": "Welcome back",
+  "Cambiar contraseña": "Change password",
+  "Cancelar": "Cancel",
+  "Cancelaste el pago. No se hizo ningún cargo.": "You cancelled the payment. You were not charged.",
+  "Cargar más": "Load more",
+  "Cerrar": "Close",
+  "Cerrar sesión": "Log out",
+  "Como quieras llamarte": "Whatever you want to be called",
+  "Compartir perfil": "Share profile",
+  "Con tu cuenta PayPal o con tarjeta de crédito o débito.": "With your PayPal account or with a credit or debit card.",
+  "Confirmando con Mercado Pago. Esto toma unos segundos.": "Confirming with Mercado Pago. This takes a few seconds.",
+  "Confirmo que soy mayor de 18 años y acepto los": "I confirm that I am 18 or older and I accept the",
+  "Contenido": "Content",
+  "Contenido exclusivo": "Exclusive content",
+  "Contenido nuevo cada semana": "New content every week",
+  "Contenido para adultos": "Adult content",
+  "Contraseña": "Password",
+  "Contraseña actualizada": "Password updated",
+  "Correo electrónico": "Email",
+  "Correo o contraseña incorrectos.": "Incorrect email or password.",
+  "Crea tu cuenta gratis": "Create your free account",
+  "Crea tu cuenta gratis en segundos.": "Create your free account in seconds.",
+  "Crea una cuenta para dar me gusta": "Create an account to like posts",
+  "Creando cuenta…": "Creating account…",
+  "Crear cuenta": "Sign up",
+  "Crear cuenta gratis": "Sign up for free",
+  "Crear una cuenta": "Create an account",
+  "Cómo funciona": "How it works",
+  "De 1 a 30 caracteres, cualquier tipo.": "1 to 30 characters, any kind.",
+  "De 1 a 30 caracteres. Puedes usar letras, números, espacios, símbolos y emojis.": "1 to 30 characters. You can use letters, numbers, spaces, symbols and emojis.",
+  "Debes confirmar que eres mayor de 18 años y aceptar los términos.": "You must confirm that you are 18 or older and accept the terms.",
+  "Demasiados intentos. Espera un momento e intenta de nuevo.": "Too many attempts. Please wait a moment and try again.",
+  "Demasiados intentos. Espera unos minutos.": "Too many attempts. Please wait a few minutes.",
+  "Desbloquear por {price}": "Unlock for {price}",
+  "Desliza para ver el contenido": "Scroll to see the content",
+  "Desliza para ver más información": "Scroll for more information",
+  "Desnudez total · Sin censura 🔞": "Full nudity · Uncensored 🔞",
+  "Disfruta {n} días de acceso total": "Enjoy {n} days of full access",
+  "Débito": "Debit",
+  "Días restantes": "Days left",
+  "El contenido se vuelve a bloquear y puedes renovar cuando quieras desde esta sección o desde \"Mi cuenta\".": "The content locks again and you can renew whenever you want from this section or from \"My account\".",
+  "El monto del pago no es correcto. Si se te cobró, contáctanos con tu número de operación.": "The payment amount is not correct. If you were charged, contact us with your transaction number.",
+  "El nombre de usuario puede tener máximo 30 caracteres.": "Usernames can be up to 30 characters long.",
+  "El pago no está disponible en este momento. Intenta de nuevo en unos minutos.": "Payments are not available right now. Please try again in a few minutes.",
+  "El pago no se completó": "The payment was not completed",
+  "Enlace copiado": "Link copied",
+  "Entra con tu cuenta para ver el estado de tu pago.": "Log in to see the status of your payment.",
+  "Entrando…": "Logging in…",
+  "Entrar": "Log in",
+  "Error interno": "Internal error",
+  "Escribe tu nueva contraseña.": "Enter your new password.",
+  "Escribe un correo válido.": "Enter a valid email.",
+  "Escribe un nombre de usuario.": "Enter a username.",
+  "Ese correo ya tiene una cuenta. Inicia sesión.": "That email already has an account. Please log in.",
+  "Ese nombre de usuario ya está ocupado. Prueba con otro.": "That username is already taken. Try another one.",
+  "Ese nombre ya está ocupado.": "That username is already taken.",
+  "Esta página no existe.": "This page doesn't exist.",
+  "Estado": "Status",
+  "Estamos activando tu acceso…": "We're activating your access…",
+  "Estamos esperando la confirmación.": "We're waiting for confirmation.",
+  "Este pago pertenece a otra cuenta.": "This payment belongs to another account.",
+  "Este sitio contiene material explícito para mayores de 18 años.": "This site contains explicit material for adults 18 and over.",
+  "Fecha": "Date",
+  "Fotos": "Photos",
+  "Gratis": "Free",
+  "Guardando…": "Saving…",
+  "Guardar": "Save",
+  "Guardar cambios": "Save changes",
+  "Historial de pagos": "Payment history",
+  "Idioma": "Language",
+  "Inactiva": "Inactive",
+  "Inicia sesión": "Log in",
+  "Inicia sesión para ver el contenido de {name}.": "Log in to see {name}'s content.",
+  "Inicio": "Home",
+  "Intentar de nuevo": "Try again",
+  "Ir a mi cuenta": "Go to my account",
+  "La contraseña debe tener al menos 6 caracteres.": "Your password must be at least 6 characters long.",
+  "Las contraseñas no coinciden.": "Passwords don't match.",
+  "Lo que desbloqueas hoy": "What you unlock today",
+  "Lo que no publico en ningún otro lado. Solo +18.": "What I don't post anywhere else. 18+ only.",
+  "Me gusta": "Likes",
+  "Mercado Pago (tarjeta, débito u OXXO) o PayPal. No se renueva automáticamente.": "PayPal or Mercado Pago (cards, debit or OXXO). Does not renew automatically.",
+  "Mercado Pago rechazó el pago o lo cancelaste. Puedes intentar con otro método.": "Mercado Pago declined the payment or you cancelled it. You can try another method.",
+  "Mi cuenta": "My account",
+  "Mira cada detalle a pantalla completa.": "See every detail in full screen.",
+  "Mira esta foto gratis al registrarte 😉": "See this photo for free when you sign up 😉",
+  "Monto": "Amount",
+  "Mostrar contraseña": "Show password",
+  "Multimedia": "Media",
+  "Muy caliente": "Very hot",
+  "Método": "Method",
+  "Mínimo 6 caracteres.": "At least 6 characters.",
+  "Navegación principal": "Main navigation",
+  "No se hizo ningún cargo a tu cuenta.": "You were not charged.",
+  "No se pudo cargar más": "Couldn't load more",
+  "No se pudo completar el pago con PayPal. Intenta de nuevo.": "The PayPal payment couldn't be completed. Please try again.",
+  "No se pudo crear la cuenta: revisa que seas mayor de 18, hayas aceptado los términos y que el nombre de usuario no esté ocupado.": "We couldn't create your account: make sure you are 18 or older, you accepted the terms and the username isn't taken.",
+  "No se pudo guardar tu me gusta": "Couldn't save your like",
+  "No se pudo guardar.": "Couldn't save.",
+  "No se pudo iniciar el pago. Intenta de nuevo.": "Couldn't start the payment. Please try again.",
+  "No. Pagas una vez y tienes {n} días de acceso. Nunca te cobramos de nuevo sin que tú lo decidas. Si renuevas antes de que termine, los días se suman.": "No. You pay once and get {n} days of access. We never charge you again unless you decide to. If you renew before it ends, the days add up.",
+  "Nombre de usuario": "Username",
+  "Nueva contraseña": "New password",
+  "OXXO / efectivo": "OXXO / cash",
+  "Ocurrió un error. Intenta de nuevo.": "Something went wrong. Please try again.",
+  "Paga {price} con Mercado Pago o PayPal": "Pay {price} with Mercado Pago or PayPal",
+  "Paga {price} con PayPal": "Pay {price} with PayPal",
+  "Pagando con tarjeta o PayPal tu acceso se activa al instante.": "Pay by card or PayPal and your access is activated instantly.",
+  "Pagar con Mercado Pago": "Pay with Mercado Pago",
+  "Pagas una vez. Tú decides si renuevas.": "You pay once. You decide whether to renew.",
+  "Pago 100% seguro": "100% secure payment",
+  "Pago pendiente": "Payment pending",
+  "Pago seguro con Mercado Pago y PayPal": "Secure payment with PayPal and Mercado Pago",
+  "PayPal": "PayPal",
+  "PayPal no completó el pago. No se hizo ningún cargo.": "PayPal didn't complete the payment. You were not charged.",
+  "PayPal no está disponible en este momento. Intenta más tarde.": "PayPal is not available right now. Please try again later.",
+  "Perfil": "Profile",
+  "Perfil actualizado": "Profile updated",
+  "Política de reembolsos": "Refund Policy",
+  "Preguntas frecuentes": "Frequently asked questions",
+  "Primero crea tu cuenta gratis (tarda 10 segundos). ¿Ya tienes una?": "First create your free account (takes 10 seconds). Already have one?",
+  "Privacidad": "Privacy",
+  "Privado y discreto": "Private and discreet",
+  "Procesado por Mercado Pago o PayPal. No guardamos tu tarjeta.": "Processed by PayPal or Mercado Pago. We never store your card.",
+  "Publicaciones": "Posts",
+  "Publicaciones nuevas cada semana": "New posts every week",
+  "Qué incluye": "What's included",
+  "Reembolsado": "Refunded",
+  "Reembolsos": "Refunds",
+  "Renovar": "Renew",
+  "Renovar por {price}": "Renew for {price}",
+  "Renueva y suma {n} días:": "Renew and add {n} days:",
+  "Repítela": "Repeat it",
+  "Respuesta de pago inválida.": "Invalid payment response.",
+  "SUSCRIBIRSE": "SUBSCRIBE",
+  "Saldo Mercado Pago": "Mercado Pago balance",
+  "Salir": "Leave",
+  "Seguridad": "Security",
+  "Sesiones nuevas solo para suscriptores.": "New sets for subscribers only.",
+  "Si pagaste en OXXO o por transferencia, la acreditación puede tardar desde unos minutos hasta 48 horas. Tu acceso se activa solo cuando se apruebe.": "If you paid at OXXO or by bank transfer, it can take from a few minutes up to 48 hours to clear. Your access activates automatically once it's approved.",
+  "Siguiente": "Next",
+  "Sin censura": "Uncensored",
+  "Sin renovación automática": "No auto-renewal",
+  "Sin suscripción": "Not subscribed",
+  "Solo para mayores de 18 años.": "Adults 18+ only.",
+  "Solo usuario, correo y contraseña.": "Just a username, email and password.",
+  "Soy mayor de 18 · Entrar": "I'm 18 or older · Enter",
+  "Suscribirme": "Subscribe",
+  "Suscribirse por {price} al mes": "Subscribe for {price} a month",
+  "Suscripción": "Subscription",
+  "Suscripción mensual": "Monthly subscription",
+  "Suscriptor": "Subscriber",
+  "Suscrito": "Subscribed",
+  "Suscríbete y desbloquea todo el contenido durante {n} días.": "Subscribe and unlock all content for {n} days.",
+  "Sí (solo en México). Mercado Pago te da una referencia para pagar en OXXO. Tu acceso se activa en cuanto el pago se acredita (puede tardar desde unos minutos hasta 48 horas).": "Yes (Mexico only). Mercado Pago gives you a reference to pay at OXXO. Your access activates as soon as the payment clears (it can take from a few minutes up to 48 hours).",
+  "Sí. Con PayPal pagas {usd} desde cualquier país, con tu cuenta PayPal o con tarjeta de crédito o débito.": "Yes. With PayPal you pay {usd} from any country, using your PayPal account or a credit or debit card.",
+  "Sí. El pago se hace directamente en Mercado Pago o PayPal; nosotros nunca vemos ni guardamos los datos de tu tarjeta.": "Yes. The payment happens directly on PayPal or Mercado Pago; we never see or store your card details.",
+  "Tarjeta de crédito": "Credit card",
+  "Tarjeta de crédito, débito, OXXO o PayPal.": "Credit card, debit card, OXXO or PayPal.",
+  "Tarjeta de débito": "Debit card",
+  "Tarjeta, débito u OXXO · Recomendado en México": "Cards, debit or OXXO · Recommended in Mexico",
+  "Te quedan {n} días · hasta el {date}": "{n} days left · until {date}",
+  "Todas las fotos y videos, completos y sin difuminar.": "Every photo and video, complete and unblurred.",
+  "Todo el contenido se desbloquea en cuanto se aprueba tu pago.": "All content unlocks as soon as your payment is approved.",
+  "Transferencia": "Bank transfer",
+  "Tu acceso termina el {date}. Si renuevas ahora, se suman {n} días.": "Your access ends on {date}. If you renew now, {n} days are added.",
+  "Tu acceso terminó el {date}.": "Your access ended on {date}.",
+  "Tu cuenta está suspendida.": "Your account is suspended.",
+  "Tu cuenta se creó, pero el servidor pide confirmación por correo. Intenta iniciar sesión en unos minutos.": "Your account was created, but the server requires email confirmation. Try logging in in a few minutes.",
+  "Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; tu acceso se activa automáticamente en cuanto Mercado Pago lo apruebe.": "Your payment is still processing. Check “My account” in a few minutes; your access activates automatically once Mercado Pago approves it.",
+  "Tu sesión expiró. Vuelve a iniciar sesión.": "Your session expired. Please log in again.",
+  "Tu suscripción": "Your subscription",
+  "Tu suscripción es solo tuya. Nadie más la ve.": "Your subscription is yours alone. Nobody else sees it.",
+  "Tu suscripción está activa": "Your subscription is active",
+  "Términos": "Terms",
+  "Un cargo de Mercado Pago o de PayPal. Tu suscripción es privada y discreta.": "A charge from PayPal or Mercado Pago. Your subscription is private and discreet.",
+  "Ver contenido": "View content",
+  "Ver el contenido": "View the content",
+  "Ver menos": "Show less",
+  "Ver más": "Show more",
+  "Verificada": "Verified",
+  "Videos": "Videos",
+  "Volver al inicio": "Back to home",
+  "Vuelve pronto, ¡hay contenido nuevo cada semana!": "Come back soon, there's new content every week!",
+  "justo ahora": "just now",
+  "mes": "month",
+  "o paga con": "or pay with",
+  "tu@correo.com": "you@email.com",
+  "y el": "and the",
+  "y la": "and the",
+  "{a} de {b}": "{a} of {b}",
+  "{n} días": "{n} days",
+  "{n} días de acceso total · Sin renovación automática": "{n} days of full access · No auto-renewal",
+  "{price} al mes": "{price} a month",
+  "{price} · PayPal o tarjeta · Para pagar desde cualquier país": "{price} · PayPal or card · Pay from any country",
+  "¡Bienvenido! Tus fotos gratis ya están desbloqueadas 🎁": "Welcome! Your free photos are now unlocked 🎁",
+  "¡Cuenta creada! Ya puedes suscribirte 💳": "Account created! You can subscribe now 💳",
+  "¡Gracias por tu pago!": "Thank you for your payment!",
+  "¡Listo! Tu suscripción está activa hasta el {date}.": "Done! Your subscription is active until {date}.",
+  "¡Pago confirmado! Ya tienes acceso 🎉": "Payment confirmed! You now have access 🎉",
+  "¿Eres nuevo?": "New here?",
+  "¿Es seguro pagar aquí?": "Is it safe to pay here?",
+  "¿Puedo pagar desde fuera de México?": "Can I pay from outside Mexico?",
+  "¿Puedo pagar en efectivo en OXXO?": "Can I pay in cash at OXXO?",
+  "¿Qué aparece en mi estado de cuenta?": "What shows up on my bank statement?",
+  "¿Qué pasa cuando terminan los {n} días?": "What happens when the {n} days are over?",
+  "¿Se renueva sola cada mes?": "Does it renew automatically every month?",
+  "¿Ya tienes cuenta?": "Already have an account?",
+  "Última actualización: 27 de noviembre de 2026": "Last updated: November 27, 2026",
+  "Únete a {name}": "Join {name}",
+};
+const tr = (s, v) => {
+  let out = LANG === "en" ? (EN[s] ?? s) : s;
+  if (v) out = out.replace(/\{(\w+)\}/g, (_, k) => (v[k] ?? ""));
+  return out;
+};
 
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/+esm";
 const sb = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
@@ -567,27 +836,31 @@ const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const cleanUsername = (s) => String(s ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim();
 const usernameError = (s) => {
   const n = Array.from(s).length;
-  if (n < 1) return "Escribe un nombre de usuario.";
-  if (n > 30) return "El nombre de usuario puede tener máximo 30 caracteres.";
+  if (n < 1) return tr("Escribe un nombre de usuario.");
+  if (n > 30) return tr("El nombre de usuario puede tener máximo 30 caracteres.");
   return "";
 };
 // Primera letra/emoji de un nombre (funciona con acentos y emojis).
 const initialOf = (s) => (Array.from(String(s ?? "").trim())[0] ?? "?").toUpperCase();
 const mxn = (n) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n) + " MXN";
-const num = (n) => new Intl.NumberFormat("es-MX", { notation: n >= 10000 ? "compact" : "standard" }).format(n ?? 0);
-const fdate = (d) => new Date(d).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
+const usd = (n) => "$" + Number(n).toFixed(2) + " USD";
+const money = (n, cur) => (cur === "USD" ? usd(n) : mxn(n));
+// Precio que ve cada visitante según su región.
+const priceLabel = () => (REGION === "MX" ? mxn(CONFIG.priceMxn) : usd(CONFIG.priceUsd));
+const num = (n) => new Intl.NumberFormat(LOCALE, { notation: n >= 10000 ? "compact" : "standard" }).format(n ?? 0);
+const fdate = (d) => new Date(d).toLocaleDateString(LOCALE, { day: "numeric", month: "short", year: "numeric" });
 const BASE_URL = location.origin + location.pathname;
 // Codifica también ' ( ) para que una ruta nunca pueda romper un url('…') de CSS.
 const encPath = (s) => encodeURIComponent(s).replace(/['()*!]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
 const publicUrl = (bucket, path) => `${CONFIG.supabaseUrl}/storage/v1/object/public/${bucket}/${String(path).split("/").map(encPath).join("/")}`;
-const rtf = new Intl.RelativeTimeFormat("es", { numeric: "auto" });
+const rtf = new Intl.RelativeTimeFormat(LANG, { numeric: "auto" });
 /** Fecha que se muestra al público: la real menos postAgeOffsetMinutes. */
 const shownDate = (d) => new Date(new Date(d).getTime() - CONFIG.postAgeOffsetMinutes * 60000);
 function timeAgo(d) {
   const s = (new Date(d) - Date.now()) / 1000;
   const units = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]];
   for (const [u, sec] of units) if (Math.abs(s) >= sec) return rtf.format(Math.round(s / sec), u);
-  return "justo ahora";
+  return tr("justo ahora");
 }
 
 const P = {
@@ -613,7 +886,7 @@ const P = {
   refresh: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/>',
 };
 const ic = (n, cls = "") => `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
-const VERIFIED = `<svg class="verified" viewBox="0 0 24 24" aria-label="Verificada"><path fill="currentColor" d="M12 1.8 14.6 3.7l3.2-.2 1 3 2.7 1.8-1 3 1 3-2.7 1.8-1 3-3.2-.2L12 22.2l-2.6-1.9-3.2.2-1-3-2.7-1.8 1-3-1-3 2.7-1.8 1-3 3.2.2z"/><path d="m8.3 12.2 2.4 2.4 5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const VERIFIED = `<svg class="verified" viewBox="0 0 24 24" aria-label="${tr("Verificada")}"><path fill="currentColor" d="M12 1.8 14.6 3.7l3.2-.2 1 3 2.7 1.8-1 3 1 3-2.7 1.8-1 3-3.2-.2L12 22.2l-2.6-1.9-3.2.2-1-3-2.7-1.8 1-3-1-3 2.7-1.8 1-3 3.2.2z"/><path d="m8.3 12.2 2.4 2.4 5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const PLAY = `<svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>`;
 
 function toast(msg, ms = 3200) {
@@ -630,21 +903,22 @@ function setBusy(btn, busy, label) {
 const showError = (el, msg) => { el.innerHTML = msg ? `<div class="alert alert-bad">${esc(msg)}</div>` : ""; };
 function authErrorMsg(e) {
   const m = (e?.message || "").toLowerCase();
-  if (m.includes("invalid login")) return "Correo o contraseña incorrectos.";
-  if (m.includes("already registered")) return "Ese correo ya tiene una cuenta. Inicia sesión.";
-  if (m.includes("database error")) return "No se pudo crear la cuenta: revisa que seas mayor de 18, hayas aceptado los términos y que el nombre de usuario no esté ocupado.";
-  if (m.includes("ocupado")) return "Ese nombre de usuario ya está ocupado. Prueba con otro.";
-  if (m.includes("máximo 30")) return "El nombre de usuario puede tener máximo 30 caracteres.";
-  if (m.includes("password")) return "La contraseña debe tener al menos 6 caracteres.";
-  if (m.includes("rate limit") || m.includes("security purposes")) return "Demasiados intentos. Espera un momento e intenta de nuevo.";
-  return e?.message || "Ocurrió un error. Intenta de nuevo.";
+  if (m.includes("invalid login")) return tr("Correo o contraseña incorrectos.");
+  if (m.includes("already registered")) return tr("Ese correo ya tiene una cuenta. Inicia sesión.");
+  if (m.includes("database error")) return tr("No se pudo crear la cuenta: revisa que seas mayor de 18, hayas aceptado los términos y que el nombre de usuario no esté ocupado.");
+  if (m.includes("ocupado")) return tr("Ese nombre de usuario ya está ocupado. Prueba con otro.");
+  if (m.includes("máximo 30")) return tr("El nombre de usuario puede tener máximo 30 caracteres.");
+  if (m.includes("mayor de 18")) return tr("Debes confirmar que eres mayor de 18 años y aceptar los términos.");
+  if (m.includes("password")) return tr("La contraseña debe tener al menos 6 caracteres.");
+  if (m.includes("rate limit") || m.includes("security purposes")) return tr("Demasiados intentos. Espera un momento e intenta de nuevo.");
+  return LANG === "es" ? (e?.message || "Ocurrió un error. Intenta de nuevo.") : tr("Ocurrió un error. Intenta de nuevo.");
 }
 
 // ═══════════════ Estado ═══════════════
 const state = { user: null, profile: null, sub: null, active: false, isAdmin: false, settings: null, stats: { posts: 0, photos: 0, videos: 0, likes: 0 } };
 const creator = () => ({
   name: state.settings?.display_name || CONFIG.name,
-  bio: state.settings?.bio || CONFIG.bio,
+  bio: (LANG === "en" && state.settings?.bio_en) || state.settings?.bio || CONFIG.bio,
   avatar: state.settings?.avatar_path ? publicUrl("branding", state.settings.avatar_path) : null,
   cover: state.settings?.cover_path ? publicUrl("branding", state.settings.cover_path) : null,
 });
@@ -664,7 +938,7 @@ async function loadSession() {
     if (profile?.is_banned) {
       await sb.auth.signOut();
       Object.assign(state, { user: null, profile: null, sub: null, active: false, isAdmin: false });
-      toast("Tu cuenta está suspendida.", 6000);
+      toast(tr("Tu cuenta está suspendida."), 6000);
       return;
     }
     state.profile = profile; state.sub = sub;
@@ -687,7 +961,7 @@ function startPresence() {
 }
 async function loadSite() {
   const [{ data: settings }, { data: stats }] = await Promise.all([
-    sb.from("site_settings").select("display_name, bio, avatar_path, cover_path, updated_at").eq("id", 1).maybeSingle(),
+    sb.from("site_settings").select("display_name, bio, bio_en, avatar_path, cover_path, updated_at").eq("id", 1).maybeSingle(),
     sb.rpc("public_stats"),
   ]);
   state.settings = settings; if (stats) state.stats = stats;
@@ -699,35 +973,39 @@ function renderChrome() {
   const c = creator();
   const on = (p) => (path === p ? "active" : "");
   const items = [
-    ["/", "home", "Inicio"],
-    ["/suscripcion", "star", "Suscripción"],
+    ["/", "home", tr("Inicio")],
+    ["/suscripcion", "star", tr("Suscripción")],
     // El botón "Entrar" lleva al registro; desde ahí hay un enlace para iniciar sesión.
-    state.user ? ["/cuenta", "user", "Mi cuenta"] : ["/registro", "login", "Entrar"],
+    state.user ? ["/cuenta", "user", tr("Mi cuenta")] : ["/registro", "login", tr("Entrar")],
     ...(state.isAdmin ? [["/admin", "shield", "Admin"]] : []),
   ];
-  const subCta = state.active ? "" : `<button class="btn btn-accent btn-block" data-subscribe>Suscribirme · ${mxn(CONFIG.priceMxn)}</button>`;
+  const subCta = state.active ? "" : `<button class="btn btn-accent btn-block" data-subscribe>${tr("Suscribirme")} · ${priceLabel()}</button>`;
+  const langBtn = `<button class="lang-btn" data-lang="${LANG === "es" ? "en" : "es"}" title="${LANG === "es" ? "English" : "Español"}">🌐 ${LANG === "es" ? "EN" : "ES"}</button>`;
 
   $("#side").innerHTML = `
     <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span></a>
     <nav class="nav">${items.map(([p, i, l]) => `<a class="nav-item ${on(p)}" href="#${p}" title="${l}">${ic(i)}<span>${l}</span></a>`).join("")}</nav>
     <div class="side-foot">
       <div class="side-cta">${subCta}</div>
-      ${state.user ? `<a class="me-chip" href="#/cuenta" title="Mi cuenta"><div class="initial">${esc(initialOf(state.profile?.username))}</div>
-        <div class="grow side-cta"><div class="bold small">${esc(state.profile?.username ?? "")}</div><div class="xs mute">${state.active ? "Suscriptor" : "Sin suscripción"}</div></div></a>`
-      : `<a class="btn btn-line btn-block side-cta" href="#/registro">Crear cuenta</a>`}
+      ${state.user ? `<a class="me-chip" href="#/cuenta" title="${tr("Mi cuenta")}"><div class="initial">${esc(initialOf(state.profile?.username))}</div>
+        <div class="grow side-cta"><div class="bold small">${esc(state.profile?.username ?? "")}</div><div class="xs mute">${state.active ? tr("Suscriptor") : tr("Sin suscripción")}</div></div></a>`
+      : `<a class="btn btn-line btn-block side-cta" href="#/registro">${tr("Crear cuenta")}</a>`}
+      <div class="side-cta" style="text-align:center">${langBtn}</div>
     </div>`;
 
   $("#topbar").innerHTML = `
     <a class="brand" href="#/"><div class="brand-dot">${esc(initialOf(c.name))}</div><span>${esc(c.name)}</span>${VERIFIED}</a>
-    ${state.active ? `<span class="pill pill-ok">${ic("check", "ic-xs")} Suscrito</span>`
-      : state.user ? `<button class="btn btn-accent btn-sm" data-subscribe>Suscribirme</button>`
-      : `<a class="btn btn-accent btn-sm" href="#/registro">Crear cuenta</a>`}`;
+    <div class="row" style="gap:.4rem">${langBtn}
+    ${state.active ? `<span class="pill pill-ok">${ic("check", "ic-xs")} ${tr("Suscrito")}</span>`
+      : state.user ? `<button class="btn btn-accent btn-sm" data-subscribe>${tr("Suscribirme")}</button>`
+      : `<a class="btn btn-accent btn-sm" href="#/registro">${tr("Crear cuenta")}</a>`}</div>`;
 
   $("#bottom-nav").innerHTML = items.map(([p, i, l]) => `<a class="${on(p)}" href="#${p}">${ic(i)}<span>${l}</span></a>`).join("");
 
   const legal = `
-    <a href="#/legal/terminos">Términos</a><a href="#/legal/privacidad">Privacidad</a>
-    <a href="#/legal/reembolsos">Reembolsos</a><a href="#/legal/aviso-ia">Aviso legal</a>
+    <a href="#/legal/terminos">${tr("Términos")}</a><a href="#/legal/privacidad">${tr("Privacidad")}</a>
+    <a href="#/legal/reembolsos">${tr("Reembolsos")}</a><a href="#/legal/aviso-ia">${tr("Aviso legal")}</a>
+    <a href="#" data-lang="${LANG === "es" ? "en" : "es"}">🌐 ${LANG === "es" ? "English" : "Español"}</a>
     <span>© ${new Date().getFullYear()} ${esc(c.name)}</span>`;
   $("#foot-links").innerHTML = legal;
 
@@ -747,16 +1025,24 @@ function renderChrome() {
     </div>
     <div class="card pad">
       ${state.active
-        ? `<div class="row between"><span class="sub-label" style="margin:0">Tu suscripción</span><span class="pill pill-ok">Activa</span></div>
-           <p class="small mute" style="margin-top:.6rem">Acceso hasta el <b style="color:var(--text)">${fdate(state.sub.current_period_end)}</b>.</p>
-           <a class="btn btn-line btn-block btn-sm" style="margin-top:1rem" href="#/cuenta">Administrar</a>`
-        : `<div class="sub-label">Suscripción</div>
-           <button class="sub-btn" data-subscribe><span>SUSCRIBIRSE</span><small>${mxn(CONFIG.priceMxn)} al mes</small></button>
+        ? `<div class="row between"><span class="sub-label" style="margin:0">${tr("Tu suscripción")}</span><span class="pill pill-ok">${tr("Activa")}</span></div>
+           <p class="small mute" style="margin-top:.6rem">${tr("Acceso hasta el")} <b style="color:var(--text)">${fdate(state.sub.current_period_end)}</b>.</p>
+           <a class="btn btn-line btn-block btn-sm" style="margin-top:1rem" href="#/cuenta">${tr("Administrar")}</a>`
+        : `<div class="sub-label">${tr("Suscripción")}</div>
+           <button class="sub-btn" data-subscribe><span>${tr("SUSCRIBIRSE")}</span><small>${tr("{price} al mes", { price: priceLabel() })}</small></button>
            <ul class="small mute" style="padding-left:1.1rem;margin:.9rem 0 0">
-             <li>Acceso completo a todo el contenido</li><li>Publicaciones nuevas cada semana</li><li>Sin renovación automática</li></ul>`}
+             <li>${tr("Acceso completo a todo el contenido")}</li><li>${tr("Publicaciones nuevas cada semana")}</li><li>${tr("Sin renovación automática")}</li></ul>`}
     </div>
     <div class="legal-links">${legal}</div>`;
 }
+
+// Botón de idioma (ES / EN).
+document.addEventListener("click", (e) => {
+  const l = e.target.closest("[data-lang]");
+  if (!l) return;
+  e.preventDefault();
+  setLang(l.dataset.lang);
+});
 
 // Botones "Suscribirme" / "Desbloquear" en cualquier parte: llevan a la sección Suscripción.
 document.addEventListener("click", (e) => {
@@ -767,17 +1053,17 @@ document.addEventListener("click", (e) => {
 });
 
 async function startCheckout(btn, errEl) {
-  setBusy(btn, true, "Abriendo pago…");
+  setBusy(btn, true, tr("Abriendo pago…"));
   if (errEl) showError(errEl, "");
   try {
     const { data, error } = await sb.functions.invoke("create-checkout", { method: "POST", body: { returnUrl: BASE_URL } });
     if (error) {
-      let msg = "No se pudo iniciar el pago. Intenta de nuevo.";
-      try { msg = (await error.context.json()).error || msg; } catch { /* sin cuerpo */ }
+      let msg = tr("No se pudo iniciar el pago. Intenta de nuevo.");
+      try { const m = (await error.context.json()).error; if (m) msg = tr(m); } catch { /* sin cuerpo */ }
       throw new Error(msg);
     }
     const url = new URL(data.url);
-    if (!/(^|\.)mercadopago\.com(\.mx)?$|(^|\.)mercadolibre\.com(\.mx)?$/.test(url.hostname)) throw new Error("Respuesta de pago inválida.");
+    if (url.protocol !== "https:" || !/(^|\.)mercadopago\.com(\.mx)?$|(^|\.)mercadolibre\.com(\.mx)?$/.test(url.hostname)) throw new Error(tr("Respuesta de pago inválida."));
     location.href = url.href;
   } catch (e) {
     setBusy(btn, false);
@@ -827,7 +1113,7 @@ async function render() {
     await view(params, () => token === renderToken);
   } catch (e) {
     console.error(e);
-    if (token === renderToken) app.innerHTML = `<div class="page"><div class="alert alert-bad">Algo salió mal al cargar esta página. Recarga e intenta de nuevo.</div></div>`;
+    if (token === renderToken) app.innerHTML = `<div class="page"><div class="alert alert-bad">${tr("Algo salió mal al cargar esta página. Recarga e intenta de nuevo.")}</div></div>`;
   }
 }
 
@@ -883,22 +1169,22 @@ function profileHeader(tab) {
     </div>
     <div class="profile-body">
       <div class="avatar-row">
-        <div style="position:relative">${avatarImg("avatar-xl")}<span class="online-dot" title="Activa"></span></div>
-        <div class="actions"><button class="icon-btn" id="share" aria-label="Compartir perfil">${ic("share", "ic-sm")}</button></div>
+        <div style="position:relative">${avatarImg("avatar-xl")}<span class="online-dot" title="${tr("Activa")}"></span></div>
+        <div class="actions"><button class="icon-btn" id="share" aria-label="${tr("Compartir perfil")}">${ic("share", "ic-sm")}</button></div>
       </div>
       <h1 class="p-name">${esc(c.name)} ${VERIFIED}</h1>
-      <div class="p-handle"><span>${esc(CONFIG.handle)}</span><span>·</span><span>Activa recientemente</span></div>
+      <div class="p-handle"><span>${esc(CONFIG.handle)}</span><span>·</span><span>${tr("Activa recientemente")}</span></div>
       <p class="p-bio clamp" id="bio">${esc(c.bio)}</p>
-      <button class="more-link hidden" id="bio-more">Ver más</button>
+      <button class="more-link hidden" id="bio-more">${tr("Ver más")}</button>
       <div style="height:1.1rem"></div>
     </div>
-    <nav class="tabs" aria-label="Contenido">
-      <a class="tab ${tab === "posts" ? "active" : ""}" href="#/">${num(s.posts)} Publicaciones</a>
-      <a class="tab ${tab === "media" ? "active" : ""}" href="#/multimedia">${num(s.photos + s.videos)} Multimedia</a>
+    <nav class="tabs" aria-label="${tr("Contenido")}">
+      <a class="tab ${tab === "posts" ? "active" : ""}" href="#/">${num(s.posts)} ${tr("Publicaciones")}</a>
+      <a class="tab ${tab === "media" ? "active" : ""}" href="#/multimedia">${num(s.photos + s.videos)} ${tr("Multimedia")}</a>
     </nav>
   </section>
   <div id="feed" class="${tab === "media" ? "media-grid" : ""}"></div>
-  <div class="load-more hidden" id="more"><button class="btn btn-line">Cargar más</button></div>`;
+  <div class="load-more hidden" id="more"><button class="btn btn-line">${tr("Cargar más")}</button></div>`;
 }
 
 const ratio = (m) => {
@@ -925,10 +1211,10 @@ function renderPost(p, ctx) {
     media.forEach((m) => lbItems.push({ url: ctx.signed[m.storage_path], kind: m.kind }));
     mediaHtml = `
       <div class="post-media protected">
-        ${p.is_free ? `<span class="free-tag">Gratis</span>` : ""}
+        ${p.is_free ? `<span class="free-tag">${tr("Gratis")}</span>` : ""}
         ${media.length > 1 ? `<span class="counter" data-counter>1/${media.length}</span>
-          <button class="nav-arrow prev" data-dir="-1" aria-label="Anterior">${ic("left", "ic-sm")}</button>
-          <button class="nav-arrow next" data-dir="1" aria-label="Siguiente">${ic("right", "ic-sm")}</button>` : ""}
+          <button class="nav-arrow prev" data-dir="-1" aria-label="${tr("Anterior")}">${ic("left", "ic-sm")}</button>
+          <button class="nav-arrow next" data-dir="1" aria-label="${tr("Siguiente")}">${ic("right", "ic-sm")}</button>` : ""}
         <div class="carousel" style="aspect-ratio:${ratio(media[0])}">
           ${media.map((m, i) => `<div class="slide" data-lb="${start + i}">
             ${m.kind === "video"
@@ -943,13 +1229,13 @@ function renderPost(p, ctx) {
       <div class="post-media">
         <div class="locked ${needAccount ? "" : "hot"}"><img src="${esc(publicUrl("previews", media[0].preview_path))}" alt="" loading="lazy">
           <div class="locked-over"><div>
-            ${needAccount ? "" : `<span class="tease-badge hot">🔥 Muy caliente</span>`}
+            ${needAccount ? "" : `<span class="tease-badge hot">🔥 ${tr("Muy caliente")}</span>`}
             <div class="lock-badge">${ic("lock")}</div>
-            <p class="tease-title">${esc(needAccount ? FREE_LOCKED_TEXT : LOCKED_TEXT)}</p>
+            <p class="tease-title">${esc(tr(needAccount ? FREE_LOCKED_TEXT : LOCKED_TEXT))}</p>
             <div class="tease-meta">${countsHtml(media)}<span>${ic("heart", "ic-xs")}${num(p.likes_total)}</span></div><br>
-            ${needAccount ? `<a class="btn btn-accent tease-cta" href="#/registro">Crear cuenta gratis</a>`
-              : `<button class="btn btn-accent tease-cta" data-subscribe>🔓 Desbloquear por ${mxn(CONFIG.priceMxn)}</button>
-                 <p class="tease-note">Acceso a todo el contenido · Sin renovación automática</p>`}
+            ${needAccount ? `<a class="btn btn-accent tease-cta" href="#/registro">${tr("Crear cuenta gratis")}</a>`
+              : `<button class="btn btn-accent tease-cta" data-subscribe>🔓 ${tr("Desbloquear por {price}", { price: priceLabel() })}</button>
+                 <p class="tease-note">${tr("Acceso a todo el contenido · Sin renovación automática")}</p>`}
           </div></div>
         </div>
       </div>`;
@@ -960,12 +1246,12 @@ function renderPost(p, ctx) {
     <header class="post-head">
       ${avatarImg("avatar-sm")}
       <div class="post-who"><div class="n">${esc(c.name)} ${VERIFIED}</div><div class="h">${esc(CONFIG.handle)}</div></div>
-      <time class="post-time" datetime="${esc(shownDate(p.published_at).toISOString())}" title="${esc(shownDate(p.published_at).toLocaleString("es-MX"))}">${timeAgo(shownDate(p.published_at))}</time>
+      <time class="post-time" datetime="${esc(shownDate(p.published_at).toISOString())}" title="${esc(shownDate(p.published_at).toLocaleString(LOCALE))}">${timeAgo(shownDate(p.published_at))}</time>
     </header>
     ${p.caption ? `<p class="post-text">${esc(p.caption)}</p>` : ""}
     ${mediaHtml}
     <footer class="post-foot">
-      <button class="act ${liked ? "liked" : ""}" data-like="${esc(p.id)}" aria-pressed="${liked}" aria-label="Me gusta">${ic("heart")}<span>${num(p.likes_total)}</span></button>
+      <button class="act ${liked ? "liked" : ""}" data-like="${esc(p.id)}" aria-pressed="${liked}" aria-label="${tr("Me gusta")}">${ic("heart")}<span>${num(p.likes_total)}</span></button>
       <div class="post-meta">${countsHtml(media)}</div>
     </footer>
   </article>`;
@@ -1018,25 +1304,25 @@ async function viewProfile(tab, alive) {
   append(first);
   if (!first.posts.length && !free?.posts.length) {
     feed.className = "";
-    feed.innerHTML = `<div class="empty">${ic("image")}<p class="bold" style="color:var(--text)">Aún no hay publicaciones</p><p class="small">Vuelve pronto, ¡hay contenido nuevo cada semana!</p></div>`;
+    feed.innerHTML = `<div class="empty">${ic("image")}<p class="bold" style="color:var(--text)">${tr("Aún no hay publicaciones")}</p><p class="small">${tr("Vuelve pronto, ¡hay contenido nuevo cada semana!")}</p></div>`;
   }
 
   // Biografía expandible
   const bio = $("#bio"), bioMore = $("#bio-more");
   if (bio.scrollHeight > bio.clientHeight + 2) bioMore.classList.remove("hidden");
-  bioMore.addEventListener("click", () => { bio.classList.toggle("clamp"); bioMore.textContent = bio.classList.contains("clamp") ? "Ver más" : "Ver menos"; });
+  bioMore.addEventListener("click", () => { bio.classList.toggle("clamp"); bioMore.textContent = bio.classList.contains("clamp") ? tr("Ver más") : tr("Ver menos"); });
 
   $("#share").addEventListener("click", async () => {
     const url = BASE_URL;
     try {
       if (navigator.share) await navigator.share({ title: creator().name, url });
-      else { await navigator.clipboard.writeText(url); toast("Enlace copiado"); }
+      else { await navigator.clipboard.writeText(url); toast(tr("Enlace copiado")); }
     } catch { /* cancelado */ }
   });
 
   $("#more button").addEventListener("click", async (e) => {
     const b = e.currentTarget; setBusy(b, true);
-    try { append(await fetchPosts(offset, filter)); } catch { toast("No se pudo cargar más"); }
+    try { append(await fetchPosts(offset, filter)); } catch { toast(tr("No se pudo cargar más")); }
     setBusy(b, false);
   });
 
@@ -1055,11 +1341,11 @@ function onHintScroll() {
 function showScrollHint(show, text = "Desliza para ver el contenido") {
   const hint = $("#scroll-hint");
   if (!hint) return;
-  $("#scroll-hint-text").textContent = text;
   hintTimers.forEach(clearTimeout); hintTimers = [];
   document.removeEventListener("scroll", onHintScroll, true);
   hint.classList.remove("visible", "solo-flecha");
   if (!show) return;
+  $("#scroll-hint-text").textContent = tr(text); // solo al mostrarse (no mientras se desvanece)
   if (!$("#gate").classList.contains("hidden")) return;      // se muestra al cerrar el aviso de +18
   if (window.scrollY > 150) return;                          // ya bajó
   if (document.documentElement.scrollHeight <= innerHeight + 120) return; // no hay nada abajo
@@ -1096,7 +1382,7 @@ function onCarouselScroll(e) {
 }
 
 async function toggleLike(btn) {
-  if (!state.user) { toast("Crea una cuenta para dar me gusta"); return go("#/registro"); }
+  if (!state.user) { toast(tr("Crea una cuenta para dar me gusta")); return go("#/registro"); }
   const id = btn.dataset.like;
   const was = btn.classList.contains("liked");
   const countEl = btn.querySelector("span");
@@ -1110,7 +1396,7 @@ async function toggleLike(btn) {
     : await sb.from("post_likes").insert({ post_id: id, user_id: state.user.id });
   if (error && error.code !== "23505") {
     btn.classList.toggle("liked", was); btn.setAttribute("aria-pressed", String(was)); countEl.textContent = num(n);
-    toast("No se pudo guardar tu me gusta");
+    toast(tr("No se pudo guardar tu me gusta"));
   }
 }
 
@@ -1218,15 +1504,15 @@ function openLightbox(index) {
     const it = lbItems[i];
     box.innerHTML = `
       <span class="lb-count">${i + 1} / ${lbItems.length}</span>
-      <button class="lb-btn lb-close" aria-label="Cerrar">${ic("close")}</button>
-      ${i > 0 ? `<button class="lb-btn lb-prev" aria-label="Anterior">${ic("left")}</button>` : ""}
-      ${i < lbItems.length - 1 ? `<button class="lb-btn lb-next" aria-label="Siguiente">${ic("right")}</button>` : ""}
+      <button class="lb-btn lb-close" aria-label="${tr("Cerrar")}">${ic("close")}</button>
+      ${i > 0 ? `<button class="lb-btn lb-prev" aria-label="${tr("Anterior")}">${ic("left")}</button>` : ""}
+      ${i < lbItems.length - 1 ? `<button class="lb-btn lb-next" aria-label="${tr("Siguiente")}">${ic("right")}</button>` : ""}
       <div class="stage">${it.kind === "video"
         ? `<video src="${esc(it.url)}" controls autoplay playsinline controlslist="nodownload noplaybackrate" disablepictureinpicture></video>`
         : `<img class="zoomable" src="${esc(it.url)}" alt="" draggable="false">`}</div>
       ${it.kind === "video" ? "" : `<div class="lb-zoom">
-        <button type="button" data-zoom="out" aria-label="Alejar">−</button><span data-zoom-level>100%</span>
-        <button type="button" data-zoom="in" aria-label="Acercar">+</button></div>`}`;
+        <button type="button" data-zoom="out" aria-label="${tr("Alejar")}">−</button><span data-zoom-level>100%</span>
+        <button type="button" data-zoom="in" aria-label="${tr("Acercar")}">+</button></div>`}`;
     const img = box.querySelector("img.zoomable");
     zoom = img ? attachZoom(img, (s) => { const l = box.querySelector("[data-zoom-level]"); if (l) l.textContent = `${Math.round(s * 100)}%`; }) : null;
   };
@@ -1263,28 +1549,101 @@ function openLightbox(index) {
 
 // ═══════════════ Cuenta: registro / entrar ═══════════════
 // ═══════════════ Suscripción ═══════════════
+// PayPal: el SDK oficial se carga solo cuando hace falta (sección Suscripción).
+let paypalSdk = null;
+function loadPayPal() {
+  if (window.paypal) return Promise.resolve(window.paypal);
+  if (paypalSdk) return paypalSdk;
+  paypalSdk = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(CONFIG.paypalClientId)}&currency=USD&intent=capture&components=buttons&locale=${LANG === "es" ? "es_MX" : "en_US"}`;
+    s.onload = () => resolve(window.paypal);
+    s.onerror = () => { paypalSdk = null; reject(new Error("paypal_sdk")); };
+    document.head.append(s);
+  });
+  return paypalSdk;
+}
+const PAYPAL_ERR = {
+  rate: "Demasiados intentos. Espera unos minutos.",
+  banned: "Tu cuenta está suspendida.",
+  session: "Tu sesión expiró. Vuelve a iniciar sesión.",
+  other_account: "Este pago pertenece a otra cuenta.",
+  amount: "El monto del pago no es correcto. Si se te cobró, contáctanos con tu número de operación.",
+  not_completed: "PayPal no completó el pago. No se hizo ningún cargo.",
+};
+async function paypalErrMsg(error) {
+  try { const code = (await error.context.json()).error; if (PAYPAL_ERR[code]) return tr(PAYPAL_ERR[code]); } catch { /* sin cuerpo */ }
+  return tr("No se pudo completar el pago con PayPal. Intenta de nuevo.");
+}
+async function mountPayPal(selector, errEl) {
+  const box = $(selector);
+  if (!box) return;
+  try {
+    const paypal = await loadPayPal();
+    if (!document.body.contains(box)) return;
+    box.innerHTML = "";
+    await paypal.Buttons({
+      style: { layout: "vertical", color: "gold", shape: "pill", label: "pay", height: 48 },
+      createOrder: async () => {
+        showError(errEl, "");
+        const { data, error } = await sb.functions.invoke("paypal-create-order", { method: "POST" });
+        if (error || !data?.id) { const m = await paypalErrMsg(error); showError(errEl, m); throw new Error(m); }
+        return data.id;
+      },
+      onApprove: async (d) => {
+        box.style.opacity = ".5"; box.style.pointerEvents = "none";
+        const { data, error } = await sb.functions.invoke("paypal-capture-order", { method: "POST", body: { orderID: d.orderID } });
+        box.style.opacity = ""; box.style.pointerEvents = "";
+        if (error || !data?.ok) return showError(errEl, await paypalErrMsg(error));
+        await loadSession();
+        toast(tr("¡Pago confirmado! Ya tienes acceso 🎉"), 5000);
+        go("#/");
+      },
+      onCancel: () => showError(errEl, tr("Cancelaste el pago. No se hizo ningún cargo.")),
+      onError: () => showError(errEl, tr("No se pudo completar el pago con PayPal. Intenta de nuevo.")),
+    }).render(selector);
+  } catch {
+    box.innerHTML = `<div class="alert alert-bad">${tr("PayPal no está disponible en este momento. Intenta más tarde.")}</div>`;
+  }
+}
+
 async function viewSubscription(_p, alive) {
   await Promise.all([loadSession(), loadSite()]);
   if (!alive()) return;
   renderChrome();
   app.dataset.view = "subscription";
   const c = creator(), s = state.stats;
-  const price = mxn(CONFIG.priceMxn);
+  const price = priceLabel();
+  const mx = REGION === "MX";
   const end = state.sub ? new Date(state.sub.current_period_end) : null;
   const daysLeft = end ? Math.max(0, Math.ceil((end - Date.now()) / 86400000)) : 0;
 
-  const cta = (id) => state.active
-    ? `<button class="subp-cta" data-checkout id="${id}">${ic("refresh", "ic-sm")} Renovar por ${price}</button>`
-    : `<button class="subp-cta" data-checkout id="${id}">${ic("lock", "ic-sm")} Suscribirse por ${price} al mes</button>`;
+  // Opciones de pago: México ve primero Mercado Pago (MXN); el resto, PayPal (USD).
+  const mpOption = `
+    <div class="pay-opt">
+      <button class="subp-cta" data-checkout>${ic(state.active ? "refresh" : "lock", "ic-sm")} Mercado Pago · ${mxn(CONFIG.priceMxn)}</button>
+      <p class="pay-opt-note">${tr("Tarjeta, débito u OXXO · Recomendado en México")}</p>
+    </div>`;
+  const ppOption = `
+    <div class="pay-opt">
+      <div id="paypal-box" class="paypal-box"><div class="loading" style="min-height:60px"><div class="spinner"></div></div></div>
+      <p class="pay-opt-note">${tr("{price} · PayPal o tarjeta · Para pagar desde cualquier país", { price: usd(CONFIG.priceUsd) })}</p>
+    </div>`;
+  const payArea = !state.user
+    ? `<button class="subp-cta" data-checkout>${ic("lock", "ic-sm")} ${tr("Suscribirse por {price} al mes", { price })}</button>
+       <p class="small mute" style="text-align:center;margin-top:.7rem">${tr("Primero crea tu cuenta gratis (tarda 10 segundos). ¿Ya tienes una?")}
+         <a href="#/entrar?next=/suscripcion" style="color:var(--accent);font-weight:700">${tr("Inicia sesión")}</a></p>`
+    : `${state.active ? `<p class="small bold" style="margin-bottom:.6rem">${tr("Renueva y suma {n} días:", { n: CONFIG.periodDays })}</p>` : ""}
+       ${mx ? mpOption : ppOption}<div class="divider">${tr("o paga con")}</div>${mx ? ppOption : mpOption}`;
 
   const perks = [
     ["image", "Acceso a todo el contenido", "Todas las fotos y videos, completos y sin difuminar."],
-    ["bolt", "Activación inmediata", "Pagando con tarjeta tu acceso se activa al instante."],
+    ["bolt", "Activación inmediata", "Pagando con tarjeta o PayPal tu acceso se activa al instante."],
     ["calendar", "Contenido nuevo cada semana", "Sesiones nuevas solo para suscriptores."],
     ["zoom", "Alta calidad con zoom", "Mira cada detalle a pantalla completa."],
     ["lock", "Sin censura", "Lo que no publico en ningún otro lado. Solo +18."],
     ["refresh", "Sin renovación automática", "Pagas una vez. Tú decides si renuevas."],
-    ["shield", "Pago 100% seguro", "Procesado por Mercado Pago. No guardamos tu tarjeta."],
+    ["shield", "Pago 100% seguro", "Procesado por Mercado Pago o PayPal. No guardamos tu tarjeta."],
     ["eye", "Privado y discreto", "Tu suscripción es solo tuya. Nadie más la ve."],
   ];
 
@@ -1294,67 +1653,76 @@ async function viewSubscription(_p, alive) {
       <header class="subp-top" ${c.cover ? `style="background-image:url('${esc(c.cover)}')"` : ""}>
         ${avatarImg("avatar-xl")}
         <div class="subp-name">${esc(c.name)} ${VERIFIED}</div>
-        <div><span class="subp-kicker">${ic("star", "ic-xs")} Suscripción mensual</span></div>
-        <div class="subp-price"><b>${price}</b><span>/ mes</span></div>
-        <p class="subp-price-note">${CONFIG.periodDays} días de acceso total · Sin renovación automática</p>
+        <div><span class="subp-kicker">${ic("star", "ic-xs")} ${tr("Suscripción mensual")}</span></div>
+        <div class="subp-price"><b>${price}</b><span>/ ${tr("mes")}</span></div>
+        <p class="subp-price-note">${tr("{n} días de acceso total · Sin renovación automática", { n: CONFIG.periodDays })}</p>
       </header>
 
-      <div class="subp-body">
+      <div class="subp-body" id="pay-area">
         ${state.active ? `
           <div class="subp-active" style="margin-bottom:1rem">${ic("check")}
-            <div><b>Tu suscripción está activa</b><small>Te quedan ${daysLeft} día${daysLeft === 1 ? "" : "s"} · hasta el ${fdate(end)}</small></div>
-          </div>` : ""}
-        ${cta("cta-top")}
-        <div id="subp-err-top" style="margin-top:.7rem"></div>
-        ${state.user ? "" : `<p class="small mute" style="text-align:center;margin-top:.7rem">Primero crea tu cuenta gratis (tarda 10 segundos). ¿Ya tienes una?
-          <a href="#/entrar?next=/suscripcion" style="color:var(--accent);font-weight:700">Inicia sesión</a></p>`}
-        ${state.active ? `<a class="btn btn-line btn-block" href="#/" style="margin-top:.7rem">Ver el contenido</a>` : ""}
-        <div class="subp-trust">${ic("shield", "ic-xs")} Pago seguro con Mercado Pago</div>
-        <div class="subp-pay"><span>💳 Tarjeta de crédito</span><span>💳 Débito</span><span>🏪 OXXO</span><span>💰 Saldo Mercado Pago</span></div>
+            <div><b>${tr("Tu suscripción está activa")}</b><small>${tr("Te quedan {n} días · hasta el {date}", { n: daysLeft, date: fdate(end) })}</small></div>
+          </div>
+          <a class="btn btn-line btn-block" href="#/" style="margin-bottom:1rem">${tr("Ver el contenido")}</a>` : ""}
+        ${payArea}
+        <div id="subp-err" style="margin-top:.7rem"></div>
+        <div class="subp-trust">${ic("shield", "ic-xs")} ${tr("Pago seguro con Mercado Pago y PayPal")}</div>
+        <div class="subp-pay">${mx
+          ? `<span>💳 ${tr("Tarjeta de crédito")}</span><span>💳 ${tr("Débito")}</span><span>🏪 OXXO</span><span>🅿️ PayPal</span>`
+          : `<span>🅿️ PayPal</span><span>💳 ${tr("Tarjeta de crédito")}</span><span>💳 ${tr("Débito")}</span>`}</div>
 
-        <h2 class="subp-h">Qué incluye</h2>
+        <h2 class="subp-h">${tr("Qué incluye")}</h2>
         <div class="perks-list">${perks.map(([i, t, d]) => `
-          <div class="perk"><div class="perk-ic">${ic(i)}</div><div><b>${t}</b><small>${d}</small></div></div>`).join("")}
+          <div class="perk"><div class="perk-ic">${ic(i)}</div><div><b>${tr(t)}</b><small>${tr(d)}</small></div></div>`).join("")}
         </div>
 
-        <h2 class="subp-h">Lo que desbloqueas hoy</h2>
+        <h2 class="subp-h">${tr("Lo que desbloqueas hoy")}</h2>
         <div class="subp-stats">
-          <div><b>${num(s.photos)}</b><span>Fotos</span></div>
-          <div><b>${num(s.videos)}</b><span>Videos</span></div>
-          <div><b>${num(s.posts)}</b><span>Publicaciones</span></div>
-          <div><b>${num(s.likes)}</b><span>Me gusta</span></div>
+          <div><b>${num(s.photos)}</b><span>${tr("Fotos")}</span></div>
+          <div><b>${num(s.videos)}</b><span>${tr("Videos")}</span></div>
+          <div><b>${num(s.posts)}</b><span>${tr("Publicaciones")}</span></div>
+          <div><b>${num(s.likes)}</b><span>${tr("Me gusta")}</span></div>
         </div>
 
-        <h2 class="subp-h">Cómo funciona</h2>
+        <h2 class="subp-h">${tr("Cómo funciona")}</h2>
         <div class="steps">
-          <div class="step"><div><b>Crea tu cuenta gratis ${state.user ? "✅" : ""}</b><small>Solo usuario, correo y contraseña.</small></div></div>
-          <div class="step"><div><b>Paga ${price} con Mercado Pago</b><small>Tarjeta de crédito, débito, saldo u OXXO.</small></div></div>
-          <div class="step"><div><b>Disfruta ${CONFIG.periodDays} días de acceso total</b><small>Todo el contenido se desbloquea en cuanto se aprueba tu pago.</small></div></div>
+          <div class="step"><div><b>${tr("Crea tu cuenta gratis")} ${state.user ? "✅" : ""}</b><small>${tr("Solo usuario, correo y contraseña.")}</small></div></div>
+          <div class="step"><div><b>${mx ? tr("Paga {price} con Mercado Pago o PayPal", { price }) : tr("Paga {price} con PayPal", { price })}</b>
+            <small>${mx ? tr("Tarjeta de crédito, débito, OXXO o PayPal.") : tr("Con tu cuenta PayPal o con tarjeta de crédito o débito.")}</small></div></div>
+          <div class="step"><div><b>${tr("Disfruta {n} días de acceso total", { n: CONFIG.periodDays })}</b><small>${tr("Todo el contenido se desbloquea en cuanto se aprueba tu pago.")}</small></div></div>
         </div>
 
-        <h2 class="subp-h">Preguntas frecuentes</h2>
+        <h2 class="subp-h">${tr("Preguntas frecuentes")}</h2>
         <div class="subp-faq">
-          <details><summary>¿Se renueva sola cada mes?</summary><p>No. Pagas una vez y tienes ${CONFIG.periodDays} días de acceso. Nunca te cobramos de nuevo sin que tú lo decidas. Si renuevas antes de que termine, los días se suman.</p></details>
-          <details><summary>¿Puedo pagar en efectivo en OXXO?</summary><p>Sí. Mercado Pago te da una referencia para pagar en OXXO. Tu acceso se activa en cuanto el pago se acredita (puede tardar desde unos minutos hasta 48 horas).</p></details>
-          <details><summary>¿Qué aparece en mi estado de cuenta?</summary><p>Un cargo de Mercado Pago. Tu suscripción es privada y discreta.</p></details>
-          <details><summary>¿Qué pasa cuando terminan los ${CONFIG.periodDays} días?</summary><p>El contenido se vuelve a bloquear y puedes renovar cuando quieras desde esta sección o desde "Mi cuenta".</p></details>
-          <details><summary>¿Es seguro pagar aquí?</summary><p>Sí. El pago se hace directamente en Mercado Pago; nosotros nunca vemos ni guardamos los datos de tu tarjeta.</p></details>
+          <details><summary>${tr("¿Se renueva sola cada mes?")}</summary><p>${tr("No. Pagas una vez y tienes {n} días de acceso. Nunca te cobramos de nuevo sin que tú lo decidas. Si renuevas antes de que termine, los días se suman.", { n: CONFIG.periodDays })}</p></details>
+          <details><summary>${tr("¿Puedo pagar desde fuera de México?")}</summary><p>${tr("Sí. Con PayPal pagas {usd} desde cualquier país, con tu cuenta PayPal o con tarjeta de crédito o débito.", { usd: usd(CONFIG.priceUsd) })}</p></details>
+          <details><summary>${tr("¿Puedo pagar en efectivo en OXXO?")}</summary><p>${tr("Sí (solo en México). Mercado Pago te da una referencia para pagar en OXXO. Tu acceso se activa en cuanto el pago se acredita (puede tardar desde unos minutos hasta 48 horas).")}</p></details>
+          <details><summary>${tr("¿Qué aparece en mi estado de cuenta?")}</summary><p>${tr("Un cargo de Mercado Pago o de PayPal. Tu suscripción es privada y discreta.")}</p></details>
+          <details><summary>${tr("¿Qué pasa cuando terminan los {n} días?", { n: CONFIG.periodDays })}</summary><p>${tr("El contenido se vuelve a bloquear y puedes renovar cuando quieras desde esta sección o desde \"Mi cuenta\".")}</p></details>
+          <details><summary>${tr("¿Es seguro pagar aquí?")}</summary><p>${tr("Sí. El pago se hace directamente en Mercado Pago o PayPal; nosotros nunca vemos ni guardamos los datos de tu tarjeta.")}</p></details>
         </div>
 
-        <div style="margin-top:1.6rem">${cta("cta-bottom")}<div id="subp-err-bottom" style="margin-top:.7rem"></div></div>
-        <p class="xs mute" style="text-align:center;margin-top:.8rem">Al suscribirte aceptas los <a href="#/legal/terminos" style="text-decoration:underline">Términos</a> y la
-          <a href="#/legal/reembolsos" style="text-decoration:underline">Política de reembolsos</a>. Solo para mayores de 18 años.</p>
+        <div style="margin-top:1.6rem"><button class="subp-cta" id="to-pay">${ic(state.active ? "refresh" : "lock", "ic-sm")} ${state.active ? tr("Renovar por {price}", { price }) : tr("Suscribirse por {price} al mes", { price })}</button></div>
+        <p class="xs mute" style="text-align:center;margin-top:.8rem">${tr("Al suscribirte aceptas los")} <a href="#/legal/terminos" style="text-decoration:underline">${tr("Términos")}</a> ${tr("y la")}
+          <a href="#/legal/reembolsos" style="text-decoration:underline">${tr("Política de reembolsos")}</a>. ${tr("Solo para mayores de 18 años.")}</p>
       </div>
     </article>
   </div>`;
 
   showScrollHint(true, "Desliza para ver más información");
+  const errEl = $("#subp-err");
 
-  // El botón de esta sección sí abre el pago de Mercado Pago.
+  // Botón de abajo: sube a las opciones de pago (o al registro si no hay cuenta).
+  $("#to-pay").addEventListener("click", () => {
+    if (!state.user) return go("#/registro?next=/suscripcion");
+    $("#pay-area").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // Mercado Pago (o registro si no hay cuenta).
   $$("[data-checkout]", app).forEach((b) => b.addEventListener("click", () => {
     if (!state.user) return go("#/registro?next=/suscripcion");
-    startCheckout(b, $(b.id === "cta-top" ? "#subp-err-top" : "#subp-err-bottom"));
+    startCheckout(b, errEl);
   }));
+  if (state.user) mountPayPal("#paypal-box", errEl);
 }
 
 function authShell(title, subtitle, body) {
@@ -1362,7 +1730,7 @@ function authShell(title, subtitle, body) {
 }
 const pwField = (id, label, auto) => `<div><label class="label" for="${id}">${label}</label>
   <div class="pw"><input class="input" id="${id}" name="${id}" type="password" minlength="6" required autocomplete="${auto}">
-  <button type="button" data-toggle-pw="${id}" aria-label="Mostrar contraseña">${ic("eye", "ic-sm")}</button></div></div>`;
+  <button type="button" data-toggle-pw="${id}" aria-label="${tr("Mostrar contraseña")}">${ic("eye", "ic-sm")}</button></div></div>`;
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-toggle-pw]");
   if (!t) return;
@@ -1376,20 +1744,20 @@ async function viewRegister(params) {
   const next = nextRaw && /^\/[a-z/-]*$/.test(nextRaw) ? nextRaw : null;
   if (state.user) return go("#" + (next || "/cuenta"));
   app.dataset.view = "auth";
-  app.innerHTML = authShell(`Únete a ${esc(creator().name)}`, "Crea tu cuenta gratis en segundos.", `
+  app.innerHTML = authShell(tr("Únete a {name}", { name: esc(creator().name) }), tr("Crea tu cuenta gratis en segundos."), `
     <form id="f" class="stack" novalidate>
-      <div><label class="label" for="username">Nombre de usuario</label>
-        <input class="input" id="username" name="username" required maxlength="60" autocomplete="username" placeholder="Como quieras llamarte">
-        <p class="hint">De 1 a 30 caracteres. Puedes usar letras, números, espacios, símbolos y emojis.</p></div>
-      <div><label class="label" for="email">Correo electrónico</label>
-        <input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></div>
-      ${pwField("password", "Contraseña", "new-password")}
+      <div><label class="label" for="username">${tr("Nombre de usuario")}</label>
+        <input class="input" id="username" name="username" required maxlength="60" autocomplete="username" placeholder="${tr("Como quieras llamarte")}">
+        <p class="hint">${tr("De 1 a 30 caracteres. Puedes usar letras, números, espacios, símbolos y emojis.")}</p></div>
+      <div><label class="label" for="email">${tr("Correo electrónico")}</label>
+        <input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="${tr("tu@correo.com")}"></div>
+      ${pwField("password", tr("Contraseña"), "new-password")}
       <label class="check"><input type="checkbox" name="terms" required>
-        <span>Confirmo que soy mayor de 18 años y acepto los <a href="#/legal/terminos" style="color:var(--accent);font-weight:700">Términos</a> y el
-        <a href="#/legal/privacidad" style="color:var(--accent);font-weight:700">Aviso de privacidad</a>.</span></label>
+        <span>${tr("Confirmo que soy mayor de 18 años y acepto los")} <a href="#/legal/terminos" style="color:var(--accent);font-weight:700">${tr("Términos")}</a> ${tr("y el")}
+        <a href="#/legal/privacidad" style="color:var(--accent);font-weight:700">${tr("Aviso de privacidad")}</a>.</span></label>
       <div id="err"></div>
-      <button class="btn btn-accent btn-block" type="submit">Crear cuenta</button>
-      <p class="small mute" style="text-align:center">¿Ya tienes cuenta? <a href="#/entrar" style="color:var(--accent);font-weight:700">Inicia sesión</a></p>
+      <button class="btn btn-accent btn-block" type="submit">${tr("Crear cuenta")}</button>
+      <p class="small mute" style="text-align:center">${tr("¿Ya tienes cuenta?")} <a href="#/entrar${next ? `?next=${next}` : ""}" style="color:var(--accent);font-weight:700">${tr("Inicia sesión")}</a></p>
     </form>`);
 
   $("#f").addEventListener("submit", async (e) => {
@@ -1398,10 +1766,10 @@ async function viewRegister(params) {
     const d = Object.fromEntries(new FormData(f));
     d.username = cleanUsername(d.username);
     const uErr = usernameError(d.username); if (uErr) return showError(err, uErr);
-    if (!/^\S+@\S+\.\S+$/.test(d.email)) return showError(err, "Escribe un correo válido.");
-    if ((d.password || "").length < 6) return showError(err, "La contraseña debe tener al menos 6 caracteres.");
-    if (!d.terms) return showError(err, "Debes confirmar que eres mayor de 18 años y aceptar los términos.");
-    showError(err, ""); setBusy(btn, true, "Creando cuenta…");
+    if (!/^\S+@\S+\.\S+$/.test(d.email)) return showError(err, tr("Escribe un correo válido."));
+    if ((d.password || "").length < 6) return showError(err, tr("La contraseña debe tener al menos 6 caracteres."));
+    if (!d.terms) return showError(err, tr("Debes confirmar que eres mayor de 18 años y aceptar los términos."));
+    showError(err, ""); setBusy(btn, true, tr("Creando cuenta…"));
     const { data, error } = await sb.auth.signUp({
       email: d.email.trim(), password: d.password,
       options: { emailRedirectTo: BASE_URL, data: { username: d.username, adult_confirmed: true, accepted_terms: true, signup_source: signupSource() } },
@@ -1410,12 +1778,12 @@ async function viewRegister(params) {
     if (error) return showError(err, authErrorMsg(error));
     if (data.session) {
       await loadSession();
-      if (next) { toast("¡Cuenta creada! Ya puedes suscribirte 💳"); return go("#" + next); }
+      if (next) { toast(tr("¡Cuenta creada! Ya puedes suscribirte 💳")); return go("#" + next); }
       freeFirstAfterSignup = true; // la primera vez, las fotos gratis salen hasta arriba ya desbloqueadas
-      toast("¡Bienvenido! Tus fotos gratis ya están desbloqueadas 🎁");
+      toast(tr("¡Bienvenido! Tus fotos gratis ya están desbloqueadas 🎁"));
       return go("#/");
     }
-    showError(err, "Tu cuenta se creó, pero el servidor pide confirmación por correo. Intenta iniciar sesión en unos minutos.");
+    showError(err, tr("Tu cuenta se creó, pero el servidor pide confirmación por correo. Intenta iniciar sesión en unos minutos."));
   });
 }
 
@@ -1424,20 +1792,20 @@ async function viewLogin(params) {
   const safeNext = next && /^\/[a-z/-]*$/.test(next) ? next : "/";
   if (state.user) return go("#" + safeNext);
   app.dataset.view = "auth";
-  app.innerHTML = authShell("Bienvenido de vuelta", `Inicia sesión para ver el contenido de ${esc(creator().name)}.`, `
+  app.innerHTML = authShell(tr("Bienvenido de vuelta"), tr("Inicia sesión para ver el contenido de {name}.", { name: esc(creator().name) }), `
     <form id="f" class="stack">
-      <div><label class="label" for="email">Correo electrónico</label><input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="tu@correo.com"></div>
-      ${pwField("password", "Contraseña", "current-password")}
+      <div><label class="label" for="email">${tr("Correo electrónico")}</label><input class="input" id="email" name="email" type="email" required autocomplete="email" placeholder="${tr("tu@correo.com")}"></div>
+      ${pwField("password", tr("Contraseña"), "current-password")}
       <div id="err"></div>
-      <button class="btn btn-accent btn-block" type="submit">Entrar</button>
-      <div class="divider">¿Eres nuevo?</div>
-      <a class="btn btn-line btn-block" href="#/registro">Crear una cuenta</a>
+      <button class="btn btn-accent btn-block" type="submit">${tr("Entrar")}</button>
+      <div class="divider">${tr("¿Eres nuevo?")}</div>
+      <a class="btn btn-line btn-block" href="#/registro${next ? `?next=${encodeURIComponent(safeNext)}` : ""}">${tr("Crear una cuenta")}</a>
     </form>`);
   $("#f").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button[type=submit]");
     const d = Object.fromEntries(new FormData(f));
-    showError(err, ""); setBusy(btn, true, "Entrando…");
+    showError(err, ""); setBusy(btn, true, tr("Entrando…"));
     const { error } = await sb.auth.signInWithPassword({ email: d.email.trim(), password: d.password });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
@@ -1447,40 +1815,40 @@ async function viewLogin(params) {
 
 async function viewNewPassword() {
   app.dataset.view = "auth";
-  app.innerHTML = authShell("Cambiar contraseña", "Escribe tu nueva contraseña.", `
+  app.innerHTML = authShell(tr("Cambiar contraseña"), tr("Escribe tu nueva contraseña."), `
     <form id="f" class="stack">
-      ${pwField("p1", "Nueva contraseña", "new-password")}
-      ${pwField("p2", "Repítela", "new-password")}
+      ${pwField("p1", tr("Nueva contraseña"), "new-password")}
+      ${pwField("p2", tr("Repítela"), "new-password")}
       <div id="err"></div>
-      <button class="btn btn-accent btn-block" type="submit">Guardar</button>
-      <a class="btn btn-line btn-block" href="#/cuenta">Cancelar</a>
+      <button class="btn btn-accent btn-block" type="submit">${tr("Guardar")}</button>
+      <a class="btn btn-line btn-block" href="#/cuenta">${tr("Cancelar")}</a>
     </form>`);
   $("#f").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = e.currentTarget, err = $("#err"), btn = f.querySelector("button[type=submit]");
     const d = Object.fromEntries(new FormData(f));
-    if (d.p1.length < 6) return showError(err, "Mínimo 6 caracteres.");
-    if (d.p1 !== d.p2) return showError(err, "Las contraseñas no coinciden.");
-    setBusy(btn, true, "Guardando…");
+    if (d.p1.length < 6) return showError(err, tr("Mínimo 6 caracteres."));
+    if (d.p1 !== d.p2) return showError(err, tr("Las contraseñas no coinciden."));
+    setBusy(btn, true, tr("Guardando…"));
     const { error } = await sb.auth.updateUser({ password: d.p1 });
     setBusy(btn, false);
     if (error) return showError(err, authErrorMsg(error));
-    toast("Contraseña actualizada"); go("#/cuenta");
+    toast(tr("Contraseña actualizada")); go("#/cuenta");
   });
 }
 
 // ═══════════════ Mi cuenta ═══════════════
+const METHOD_NAME = { credit_card: "Tarjeta de crédito", debit_card: "Tarjeta de débito", ticket: "OXXO / efectivo", account_money: "Saldo Mercado Pago", bank_transfer: "Transferencia", paypal: "PayPal" };
 async function viewAccount(_p, alive) {
   await loadSession(); renderChrome();
   if (!state.user) return go("#/entrar");
   const { data: payments } = await sb.from("payments")
-    .select("amount, method, status, approved_at, days_granted").order("created_at", { ascending: false }).limit(24);
+    .select("amount, currency, method, status, approved_at, days_granted").order("created_at", { ascending: false }).limit(24);
   if (!alive()) return;
   app.dataset.view = "account";
   const end = state.sub ? new Date(state.sub.current_period_end) : null;
   const daysLeft = end ? Math.max(0, Math.ceil((end - Date.now()) / 86400000)) : 0;
   const pct = state.active ? Math.min(100, Math.round((daysLeft / CONFIG.periodDays) * 100)) : 0;
-  const methodName = { credit_card: "Tarjeta de crédito", debit_card: "Tarjeta de débito", ticket: "OXXO / efectivo", account_money: "Saldo Mercado Pago", bank_transfer: "Transferencia" };
 
   app.innerHTML = `
   <div class="page">
@@ -1491,48 +1859,52 @@ async function viewAccount(_p, alive) {
     <div class="grid-2">
       <div class="stack">
         <div class="card pad">
-          <div class="row between"><h2 class="section-h">Suscripción</h2>
-            ${state.active ? `<span class="pill pill-ok">● Activa</span>` : `<span class="pill pill-off">Inactiva</span>`}</div>
+          <div class="row between"><h2 class="section-h">${tr("Suscripción")}</h2>
+            ${state.active ? `<span class="pill pill-ok">● ${tr("Activa")}</span>` : `<span class="pill pill-off">${tr("Inactiva")}</span>`}</div>
           <div class="row" style="gap:1rem;margin-top:1.1rem">${avatarImg("avatar-sm")}
-            <div class="grow"><div class="bold row" style="gap:.3rem">${esc(creator().name)} ${VERIFIED}</div><div class="xs mute">${mxn(CONFIG.priceMxn)} / ${CONFIG.periodDays} días</div></div></div>
+            <div class="grow"><div class="bold row" style="gap:.3rem">${esc(creator().name)} ${VERIFIED}</div><div class="xs mute">${priceLabel()} / ${tr("{n} días", { n: CONFIG.periodDays })}</div></div></div>
           ${state.active ? `
-            <div style="margin-top:1.2rem"><div class="row between small"><span class="mute">Días restantes</span><b>${daysLeft} de ${CONFIG.periodDays}</b></div>
+            <div style="margin-top:1.2rem"><div class="row between small"><span class="mute">${tr("Días restantes")}</span><b>${tr("{a} de {b}", { a: daysLeft, b: CONFIG.periodDays })}</b></div>
               <div class="progress" style="margin-top:.5rem"><i style="width:${pct}%"></i></div>
-              <p class="xs mute" style="margin-top:.5rem">Tu acceso termina el ${fdate(end)}. Si renuevas ahora, se suman ${CONFIG.periodDays} días.</p></div>
-            <div class="row wrap-row" style="margin-top:1.2rem"><a class="btn btn-accent" href="#/">Ver contenido</a>
-              <button class="btn btn-line" id="pay">Renovar · ${mxn(CONFIG.priceMxn)}</button></div>`
+              <p class="xs mute" style="margin-top:.5rem">${tr("Tu acceso termina el {date}. Si renuevas ahora, se suman {n} días.", { date: fdate(end), n: CONFIG.periodDays })}</p></div>
+            <div class="row wrap-row" style="margin-top:1.2rem"><a class="btn btn-accent" href="#/">${tr("Ver contenido")}</a>
+              <button class="btn btn-line" id="pay">${tr("Renovar")} · ${priceLabel()}</button></div>`
           : `
-            <p class="small mute" style="margin-top:1rem">${end ? `Tu acceso terminó el ${fdate(end)}.` : "Aún no tienes una suscripción."}
-              Suscríbete y desbloquea todo el contenido durante ${CONFIG.periodDays} días.</p>
-            <button class="sub-btn" id="pay" style="margin-top:1rem"><span>SUSCRIBIRSE</span><small>${mxn(CONFIG.priceMxn)} al mes</small></button>
-            <p class="hint">Tarjeta de crédito, débito u OXXO con Mercado Pago. No se renueva automáticamente.</p>`}
+            <p class="small mute" style="margin-top:1rem">${end ? tr("Tu acceso terminó el {date}.", { date: fdate(end) }) : tr("Aún no tienes una suscripción.")}
+              ${tr("Suscríbete y desbloquea todo el contenido durante {n} días.", { n: CONFIG.periodDays })}</p>
+            <button class="sub-btn" id="pay" style="margin-top:1rem"><span>${tr("SUSCRIBIRSE")}</span><small>${tr("{price} al mes", { price: priceLabel() })}</small></button>
+            <p class="hint">${tr("Mercado Pago (tarjeta, débito u OXXO) o PayPal. No se renueva automáticamente.")}</p>`}
           <div id="pay-err" style="margin-top:.8rem"></div>
         </div>
         <div class="card pad">
-          <h2 class="section-h" style="margin-bottom:.6rem">Historial de pagos</h2>
+          <h2 class="section-h" style="margin-bottom:.6rem">${tr("Historial de pagos")}</h2>
           ${payments?.length ? `<div class="table-wrap"><table>
-            <thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Estado</th></tr></thead>
-            <tbody>${payments.map((p) => `<tr><td>${fdate(p.approved_at)}</td><td class="bold">${mxn(p.amount)}</td>
-              <td>${esc(methodName[p.method] ?? p.method ?? "—")}</td>
-              <td>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</td></tr>`).join("")}
-            </tbody></table></div>` : `<p class="small mute">Aún no hay pagos.</p>`}
+            <thead><tr><th>${tr("Fecha")}</th><th>${tr("Monto")}</th><th>${tr("Método")}</th><th>${tr("Estado")}</th></tr></thead>
+            <tbody>${payments.map((p) => `<tr><td>${fdate(p.approved_at)}</td><td class="bold">${money(p.amount, p.currency)}</td>
+              <td>${esc(METHOD_NAME[p.method] ? tr(METHOD_NAME[p.method]) : (p.method ?? "—"))}</td>
+              <td>${p.status === "approved" ? `<span class="pill pill-ok">${tr("Aprobado")}</span>` : `<span class="pill pill-off">${tr("Reembolsado")}</span>`}</td></tr>`).join("")}
+            </tbody></table></div>` : `<p class="small mute">${tr("Aún no hay pagos.")}</p>`}
         </div>
       </div>
       <div class="stack">
         <div class="card pad">
-          <h2 class="section-h" style="margin-bottom:1rem">Perfil</h2>
+          <h2 class="section-h" style="margin-bottom:1rem">${tr("Perfil")}</h2>
           <form id="fu" class="stack">
-            <div><label class="label" for="un">Nombre de usuario</label>
+            <div><label class="label" for="un">${tr("Nombre de usuario")}</label>
               <input class="input" id="un" name="username" value="${esc(state.profile?.username ?? "")}" maxlength="60" required>
-              <p class="hint">De 1 a 30 caracteres, cualquier tipo.</p></div>
+              <p class="hint">${tr("De 1 a 30 caracteres, cualquier tipo.")}</p></div>
             <div id="fu-err"></div>
-            <button class="btn btn-line btn-block" type="submit">Guardar cambios</button>
+            <button class="btn btn-line btn-block" type="submit">${tr("Guardar cambios")}</button>
           </form>
         </div>
         <div class="card pad stack">
-          <h2 class="section-h">Seguridad</h2>
-          <a class="btn btn-line btn-block" href="#/nueva-clave">Cambiar contraseña</a>
-          <button class="btn btn-danger btn-block" id="logout">${ic("logout", "ic-sm")} Cerrar sesión</button>
+          <h2 class="section-h">${tr("Idioma")}</h2>
+          <div class="seg"><a class="${LANG === "es" ? "active" : ""}" href="#" data-lang="es">Español</a><a class="${LANG === "en" ? "active" : ""}" href="#" data-lang="en">English</a></div>
+        </div>
+        <div class="card pad stack">
+          <h2 class="section-h">${tr("Seguridad")}</h2>
+          <a class="btn btn-line btn-block" href="#/nueva-clave">${tr("Cambiar contraseña")}</a>
+          <button class="btn btn-danger btn-block" id="logout">${ic("logout", "ic-sm")} ${tr("Cerrar sesión")}</button>
         </div>
       </div>
     </div>
@@ -1549,8 +1921,8 @@ async function viewAccount(_p, alive) {
     setBusy(btn, true);
     const { error } = await sb.from("profiles").update({ username }).eq("id", state.user.id);
     setBusy(btn, false);
-    if (error) return showError(err, error.code === "23505" ? "Ese nombre ya está ocupado." : "No se pudo guardar.");
-    showError(err, ""); toast("Perfil actualizado"); await loadSession(); renderChrome();
+    if (error) return showError(err, error.code === "23505" ? tr("Ese nombre ya está ocupado.") : tr("No se pudo guardar."));
+    showError(err, ""); toast(tr("Perfil actualizado")); await loadSession(); renderChrome();
   });
 }
 
@@ -1558,23 +1930,23 @@ async function viewPayment(params, alive) {
   app.dataset.view = "auth";
   const st = params.get("estado");
   if (!state.user) {
-    app.innerHTML = authShell("Inicia sesión", "Entra con tu cuenta para ver el estado de tu pago.", `<a class="btn btn-accent btn-block" href="#/entrar?next=/cuenta">Entrar</a>`);
+    app.innerHTML = authShell(tr("Inicia sesión"), tr("Entra con tu cuenta para ver el estado de tu pago."), `<a class="btn btn-accent btn-block" href="#/entrar?next=/cuenta">${tr("Entrar")}</a>`);
     return;
   }
   if (st === "rechazado") {
-    app.innerHTML = authShell("El pago no se completó", "No se hizo ningún cargo a tu cuenta.", `
-      <div class="alert alert-bad">Mercado Pago rechazó el pago o lo cancelaste. Puedes intentar con otro método.</div>
-      <a class="btn btn-accent btn-block" style="margin-top:1rem" href="#/cuenta">Intentar de nuevo</a>`);
+    app.innerHTML = authShell(tr("El pago no se completó"), tr("No se hizo ningún cargo a tu cuenta."), `
+      <div class="alert alert-bad">${tr("Mercado Pago rechazó el pago o lo cancelaste. Puedes intentar con otro método.")}</div>
+      <a class="btn btn-accent btn-block" style="margin-top:1rem" href="#/suscripcion">${tr("Intentar de nuevo")}</a>`);
     return;
   }
   if (st === "pendiente") {
-    app.innerHTML = authShell("Pago pendiente", "Estamos esperando la confirmación.", `
-      <div class="alert alert-warn">Si pagaste en OXXO o por transferencia, la acreditación puede tardar desde unos minutos hasta 48 horas. Tu acceso se activa solo cuando se apruebe.</div>
-      <a class="btn btn-line btn-block" style="margin-top:1rem" href="#/cuenta">Ir a mi cuenta</a>`);
+    app.innerHTML = authShell(tr("Pago pendiente"), tr("Estamos esperando la confirmación."), `
+      <div class="alert alert-warn">${tr("Si pagaste en OXXO o por transferencia, la acreditación puede tardar desde unos minutos hasta 48 horas. Tu acceso se activa solo cuando se apruebe.")}</div>
+      <a class="btn btn-line btn-block" style="margin-top:1rem" href="#/cuenta">${tr("Ir a mi cuenta")}</a>`);
     return;
   }
-  app.innerHTML = authShell("¡Gracias por tu pago!", "Estamos activando tu acceso…", `
-    <div class="row" id="pstatus"><span class="spinner"></span><span class="small mute">Confirmando con Mercado Pago. Esto toma unos segundos.</span></div>`);
+  app.innerHTML = authShell(tr("¡Gracias por tu pago!"), tr("Estamos activando tu acceso…"), `
+    <div class="row" id="pstatus"><span class="spinner"></span><span class="small mute">${tr("Confirmando con Mercado Pago. Esto toma unos segundos.")}</span></div>`);
   const before = state.sub?.current_period_end;
   const pid = params.get("pid");
   // Segundo camino: el servidor verifica este pago directamente con Mercado Pago
@@ -1593,10 +1965,10 @@ async function viewPayment(params, alive) {
   if (!alive()) return;
   renderChrome();
   $("#pstatus").outerHTML = state.active
-    ? `<div class="alert alert-ok">¡Listo! Tu suscripción está activa hasta el ${fdate(state.sub.current_period_end)}.</div>
-       <a class="btn btn-accent btn-block" style="margin-top:1rem" href="#/">Ver el contenido</a>`
-    : `<div class="alert alert-warn">Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; tu acceso se activa automáticamente en cuanto Mercado Pago lo apruebe.</div>
-       <a class="btn btn-line btn-block" style="margin-top:1rem" href="#/cuenta">Ir a mi cuenta</a>`;
+    ? `<div class="alert alert-ok">${tr("¡Listo! Tu suscripción está activa hasta el {date}.", { date: fdate(state.sub.current_period_end) })}</div>
+       <a class="btn btn-accent btn-block" style="margin-top:1rem" href="#/">${tr("Ver el contenido")}</a>`
+    : `<div class="alert alert-warn">${tr("Tu pago aún se está procesando. Revisa “Mi cuenta” en unos minutos; tu acceso se activa automáticamente en cuanto Mercado Pago lo apruebe.")}</div>
+       <a class="btn btn-line btn-block" style="margin-top:1rem" href="#/cuenta">${tr("Ir a mi cuenta")}</a>`;
 }
 
 // ═══════════════ Admin ═══════════════
@@ -1752,7 +2124,7 @@ async function adminOverview(alive) {
           <div style="margin-top:.5rem">${o.recent_payments.length ? o.recent_payments.map((p) => `
             <div class="list-row click" data-user="${esc(p.user_id)}"><div class="grow"><div class="small bold">${esc(p.username || "—")}</div>
               <div class="xs mute">${fdatetime(p.approved_at)} · ${esc(METHOD[p.method] ?? p.method ?? "—")}</div></div>
-              <div class="bold small">${mxn(p.amount)}</div>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</div>`).join("")
+              <div class="bold small">${money(p.amount, p.currency)}</div>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</div>`).join("")
             : `<p class="small mute" style="padding:.8rem 0">Aún no hay pagos.</p>`}</div></div>
       </div>
       <p class="xs mute" style="margin-top:1rem;text-align:right">Se actualiza solo cada 30 segundos · ${new Date().toLocaleTimeString("es-MX")}</p>`;
@@ -1962,7 +2334,7 @@ async function openUserDrawer(id, onChange) {
       <div class="drawer-sec">
         <h3>Pagos (${d.payments.length})</h3>
         ${d.payments.length ? `<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Estado</th></tr></thead><tbody>
-          ${d.payments.map((p) => `<tr title="Operación Mercado Pago: ${esc(p.provider_payment_id)}"><td class="small">${fdatetime(p.approved_at)}</td><td class="bold">${mxn(p.amount)}</td>
+          ${d.payments.map((p) => `<tr title="Operación ${p.method === "paypal" ? "PayPal" : "Mercado Pago"}: ${esc(p.provider_payment_id)}"><td class="small">${fdatetime(p.approved_at)}</td><td class="bold">${money(p.amount, p.currency)}</td>
             <td class="small">${esc(METHOD[p.method] ?? p.method ?? "—")}</td><td>${p.status === "approved" ? `<span class="pill pill-ok">Aprobado</span>` : `<span class="pill pill-off">Reembolsado</span>`}</td></tr>`).join("")}
           </tbody></table></div>` : `<p class="small mute">Sin pagos.</p>`}
         <p class="xs mute" style="margin-top:.6rem">${d.attempts.length ? `${d.attempts.length} intento(s) de pago · último ${fdatetime(d.attempts[0].created_at)}` : "Nunca intentó pagar."}</p>
@@ -2125,6 +2497,8 @@ function adminProfile() {
         <p class="hint" style="margin-top:0">Portada recomendada: 1500 × 500 px. Foto de perfil: cuadrada. Se ven públicamente sin suscripción.</p>
         <div><label class="label" for="dn">Nombre visible</label><input class="input" id="dn" maxlength="60" value="${esc(state.settings?.display_name || CONFIG.name)}"></div>
         <div><label class="label" for="bio-in">Biografía</label><textarea class="input" id="bio-in" maxlength="1000">${esc(state.settings?.bio || CONFIG.bio)}</textarea></div>
+        <div><label class="label" for="bio-en">Biografía en inglés <span class="mute" style="font-weight:500">(la ven los visitantes con la web en inglés)</span></label>
+          <textarea class="input" id="bio-en" maxlength="1000" placeholder="Exclusive content I don't post anywhere else. New sets every week. 💋">${esc(state.settings?.bio_en || "")}</textarea></div>
         <div id="fb-err"></div>
         <button class="btn btn-accent btn-block" type="submit">Guardar perfil</button>
       </form>
@@ -2138,7 +2512,7 @@ function adminProfile() {
     const btn = e.currentTarget.querySelector("button[type=submit]"), err = $("#fb-err");
     setBusy(btn, true, "Guardando…"); showError(err, "");
     try {
-      const patch = { display_name: $("#dn").value.trim() || null, bio: $("#bio-in").value.trim() || null, updated_at: new Date().toISOString() };
+      const patch = { display_name: $("#dn").value.trim() || null, bio: $("#bio-in").value.trim() || null, bio_en: $("#bio-en").value.trim() || null, updated_at: new Date().toISOString() };
       const old = [];
       if (avFile) {
         const blob = await resizeImage(avFile, 640, true);
@@ -2250,12 +2624,12 @@ async function makeBlurPreview(file, kind) {
 }
 
 // ═══════════════ Legales ═══════════════
-const LEGAL = {
+const LEGAL_ES = {
   terminos: ["Términos y condiciones", () => `
     <p>Al crear una cuenta en este sitio aceptas estos términos.</p>
     <h2>1. Mayoría de edad</h2><p>Debes tener al menos 18 años y la mayoría de edad legal en tu país. Si descubrimos que una cuenta pertenece a un menor, la cancelamos sin reembolso.</p>
     <h2>2. Naturaleza del contenido</h2><p>${esc(creator().name)} es un personaje de la marca. El contenido se produce con herramientas digitales, incluida inteligencia artificial, y no representa a ninguna persona real. Consulta el <a href="#/legal/aviso-ia" style="color:var(--accent)">Aviso legal</a>.</p>
-    <h2>3. Suscripción y pagos</h2><p>La suscripción cuesta ${mxn(CONFIG.priceMxn)} y da ${CONFIG.periodDays} días de acceso desde que se aprueba el pago. No se renueva automáticamente. Los pagos se procesan con Mercado Pago; no guardamos datos de tu tarjeta.</p>
+    <h2>3. Suscripción y pagos</h2><p>La suscripción cuesta ${mxn(CONFIG.priceMxn)} con Mercado Pago o ${usd(CONFIG.priceUsd)} con PayPal, y da ${CONFIG.periodDays} días de acceso desde que se aprueba el pago. No se renueva automáticamente. Los pagos se procesan con Mercado Pago o PayPal; no guardamos datos de tu tarjeta.</p>
     <h2>4. Uso permitido</h2><p>El contenido es para tu uso personal dentro del sitio. Está prohibido descargarlo, grabarlo, compartirlo, revenderlo o publicarlo en otros lugares.</p>
     <h2>5. Cuentas</h2><p>Tu cuenta es personal. No compartas tu contraseña. Podemos suspender cuentas que incumplan estos términos.</p>
     <h2>6. Cambios</h2><p>Podemos actualizar estos términos; publicaremos la versión vigente en esta página.</p>`],
@@ -2263,28 +2637,62 @@ const LEGAL = {
     <p>Tratamos tus datos conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</p>
     <h2>Datos que recopilamos</h2><ul><li>Correo electrónico y nombre de usuario.</li><li>Tu confirmación de que eres mayor de 18 años y de que aceptaste los términos.</li><li>Historial de pagos (monto, fecha, método). No recibimos ni guardamos datos de tarjetas.</li></ul>
     <h2>Para qué los usamos</h2><p>Para crear y proteger tu cuenta, verificar tu edad, darte acceso al contenido y atender aclaraciones de pago.</p>
-    <h2>Con quién los compartimos</h2><p>Con Supabase (alojamiento de la cuenta y base de datos) y Mercado Pago (procesamiento del pago). No vendemos tus datos.</p>
+    <h2>Con quién los compartimos</h2><p>Con Supabase (alojamiento de la cuenta y base de datos), Mercado Pago y PayPal (procesamiento del pago). No vendemos tus datos.</p>
     <h2>Tus derechos</h2><p>Puedes consultar y corregir tu nombre de usuario y ver tu historial de pagos en cualquier momento desde “Mi cuenta”.</p>`],
   reembolsos: ["Política de reembolsos", () => `
     <p>Por tratarse de contenido digital al que se accede de inmediato, los pagos no son reembolsables una vez activado el acceso, salvo en estos casos:</p>
     <ul><li>Cobro duplicado.</li><li>Pagaste y el acceso no se activó en 24 horas.</li><li>Fallo técnico del sitio que te impidió ver el contenido.</li></ul>
-    <p>Para estos casos puedes iniciar una aclaración desde tu cuenta de Mercado Pago con el número de operación de tu pago.</p>
+    <p>Para estos casos puedes iniciar una aclaración desde tu cuenta de Mercado Pago o de PayPal con el número de operación de tu pago.</p>
     <p>Si haces un contracargo con tu banco, tu acceso se cancela automáticamente.</p>`],
   "aviso-ia": ["Aviso legal", () => `
     <p>El contenido visual de este sitio se produce con herramientas digitales, incluida inteligencia artificial.</p>
     <ul><li>${esc(creator().name)} es un personaje de la marca y se representa siempre como adulta (mayor de 18 años).</li>
     <li>El contenido no está basado en la imagen de ninguna persona real; cualquier parecido es coincidencia.</li></ul>`],
 };
+const LEGAL_EN = {
+  terminos: ["Terms and Conditions", () => `
+    <p>By creating an account on this site you agree to these terms.</p>
+    <h2>1. Legal age</h2><p>You must be at least 18 years old and of legal age in your country. If we find that an account belongs to a minor, we will close it without a refund.</p>
+    <h2>2. Nature of the content</h2><p>${esc(creator().name)} is a brand character. The content is produced with digital tools, including artificial intelligence, and does not depict any real person. See the <a href="#/legal/aviso-ia" style="color:var(--accent)">Legal notice</a>.</p>
+    <h2>3. Subscription and payments</h2><p>The subscription costs ${usd(CONFIG.priceUsd)} with PayPal or ${mxn(CONFIG.priceMxn)} with Mercado Pago, and gives you ${CONFIG.periodDays} days of access from the moment the payment is approved. It does not renew automatically. Payments are processed by PayPal or Mercado Pago; we never store your card details.</p>
+    <h2>4. Permitted use</h2><p>The content is for your personal use inside this site. Downloading, recording, sharing, reselling or publishing it anywhere else is prohibited.</p>
+    <h2>5. Accounts</h2><p>Your account is personal. Do not share your password. We may suspend accounts that break these terms.</p>
+    <h2>6. Changes</h2><p>We may update these terms; the current version will always be published on this page.</p>`],
+  privacidad: ["Privacy Notice", () => `
+    <p>We process your data in accordance with applicable data protection laws.</p>
+    <h2>Data we collect</h2><ul><li>Email address and username.</li><li>Your confirmation that you are 18 or older and that you accepted the terms.</li><li>Payment history (amount, date, method). We never receive or store card details.</li></ul>
+    <h2>How we use it</h2><p>To create and protect your account, verify your age, give you access to the content and handle payment inquiries.</p>
+    <h2>Who we share it with</h2><p>Supabase (account hosting and database), PayPal and Mercado Pago (payment processing). We do not sell your data.</p>
+    <h2>Your rights</h2><p>You can view and update your username and see your payment history at any time from “My account”.</p>`],
+  reembolsos: ["Refund Policy", () => `
+    <p>Because this is digital content that is accessible immediately, payments are non-refundable once access has been activated, except in these cases:</p>
+    <ul><li>Duplicate charge.</li><li>You paid and your access was not activated within 24 hours.</li><li>A technical failure on the site prevented you from viewing the content.</li></ul>
+    <p>In these cases you can open a dispute from your PayPal or Mercado Pago account using your payment's transaction number.</p>
+    <p>If you file a chargeback with your bank, your access is cancelled automatically.</p>`],
+  "aviso-ia": ["Legal Notice", () => `
+    <p>The visual content on this site is produced with digital tools, including artificial intelligence.</p>
+    <ul><li>${esc(creator().name)} is a brand character and is always depicted as an adult (18+).</li>
+    <li>The content is not based on the likeness of any real person; any resemblance is coincidental.</li></ul>`],
+};
 function viewLegal(key) {
   app.dataset.view = "legal";
-  const [title, html] = LEGAL[key];
-  app.innerHTML = `<div class="page legal"><h1 class="page-h">${title}</h1><p class="xs mute" style="margin-top:.3rem">Última actualización: 24 de noviembre de 2026</p>${html()}</div>`;
+  const [title, html] = (LANG === "en" ? LEGAL_EN : LEGAL_ES)[key];
+  app.innerHTML = `<div class="page legal"><h1 class="page-h">${title}</h1><p class="xs mute" style="margin-top:.3rem">${tr("Última actualización: 27 de noviembre de 2026")}</p>${html()}</div>`;
 }
-const notFound = () => `<div class="empty"><p class="page-h" style="color:var(--text)">404</p><p>Esta página no existe.</p><a class="btn btn-line" style="margin-top:1rem" href="#/">Volver al inicio</a></div>`;
+const notFound = () => `<div class="empty"><p class="page-h" style="color:var(--text)">404</p><p>${tr("Esta página no existe.")}</p><a class="btn btn-line" style="margin-top:1rem" href="#/">${tr("Volver al inicio")}</a></div>`;
 
 // ═══════════════ Arranque ═══════════════
 function initGate() {
   const gate = $("#gate");
+  // Textos fijos del HTML en el idioma del visitante.
+  $("#gate-title").textContent = tr("Contenido para adultos");
+  const gp = $$("#gate p");
+  gp[0].textContent = tr("Este sitio contiene material explícito para mayores de 18 años.");
+  gp[1].textContent = tr("Al entrar confirmas que eres mayor de edad y que ver este contenido es legal donde vives.");
+  $("#gate-ok").textContent = tr("Soy mayor de 18 · Entrar");
+  $("#gate .btn-line").textContent = tr("Salir");
+  $("#bottom-nav").setAttribute("aria-label", tr("Navegación principal"));
+  document.title = `${CONFIG.name} · ${tr("Contenido exclusivo")}`;
   let ok = false;
   try { ok = localStorage.getItem("age_ok_v1") === "1"; } catch { /* sin almacenamiento */ }
   if (!ok) { gate.classList.remove("hidden"); document.body.style.overflow = "hidden"; }
