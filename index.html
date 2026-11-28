@@ -191,6 +191,19 @@
   .p-handle { color: var(--mute); font-size: .9rem; display: flex; gap: .45rem; flex-wrap: wrap; }
   .p-bio { margin-top: .8rem; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
   .p-bio.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Estadísticas del perfil (como seguidores en TikTok / Instagram) */
+  .p-stats { list-style: none; margin: 1rem 0 0; padding: .8rem 0; display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .p-stats li { position: relative; display: flex; flex-direction: column; align-items: center; gap: .15rem; min-width: 0; text-align: center; }
+  .p-stats li + li::before { content: ""; position: absolute; left: 0; top: 15%; height: 70%; width: 1px; background: var(--line); }
+  .p-stats b { font-size: 1.2rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.15; color: var(--text); font-variant-numeric: tabular-nums; }
+  .p-stats span { font-size: .76rem; font-weight: 600; color: var(--mute); white-space: nowrap; }
+  .p-stats .p-stat-subs b { background: linear-gradient(135deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .p-stats .p-stat-subs span { display: inline-flex; align-items: center; gap: .25rem; }
+  .p-stats .live { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgb(34 197 94 / .6); animation: live-pulse 2s infinite; }
+  @keyframes live-pulse { 70% { box-shadow: 0 0 0 6px rgb(34 197 94 / 0); } 100% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0); } }
+  @media (prefers-reduced-motion: reduce) { .p-stats .live { animation: none; } }
+  @media (min-width: 520px) { .p-stats b { font-size: 1.35rem; } .p-stats span { font-size: .8rem; } }
   .more-link { background: none; border: 0; padding: 0; margin-top: .3rem; color: var(--accent); font-weight: 700; font-size: .85rem; cursor: pointer; }
 
   .sub-box { margin: 1.2rem 0 0; padding: 1rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -709,6 +722,8 @@ const EN = {
   "Lo que desbloqueas hoy": "What you unlock today",
   "Lo que no publico en ningún otro lado. Solo +18.": "What I don't post anywhere else. 18+ only.",
   "Me gusta": "Likes",
+  "Estadísticas del perfil": "Profile stats",
+  "Suscriptores": "Subscribers",
   "Mercado Pago (tarjeta, débito u OXXO) o PayPal. No se renueva automáticamente.": "PayPal or Mercado Pago (cards, debit or OXXO). Does not renew automatically.",
   "Mercado Pago rechazó el pago o lo cancelaste. Puedes intentar con otro método.": "Mercado Pago declined the payment or you cancelled it. You can try another method.",
   "Mi cuenta": "My account",
@@ -1004,7 +1019,7 @@ function authErrorMsg(e) {
 }
 
 // ═══════════════ Estado ═══════════════
-const state = { user: null, profile: null, sub: null, active: false, isAdmin: false, settings: null, stats: { posts: 0, photos: 0, videos: 0, likes: 0 } };
+const state = { user: null, profile: null, sub: null, active: false, isAdmin: false, settings: null, stats: { posts: 0, photos: 0, videos: 0, likes: 0, subscribers: 200 } };
 const creator = () => ({
   name: state.settings?.display_name || CONFIG.name,
   bio: (LANG === "en" && state.settings?.bio_en) || state.settings?.bio || CONFIG.bio,
@@ -1232,6 +1247,22 @@ async function fetchPosts(from, filter = "all", size = PAGE_SIZE) {
 //  - una sola vez justo después de registrarse (ya desbloqueadas).
 let freeFirstAfterSignup = false;
 
+// Los números del perfil suben de 0 a su valor la primera vez que se ve la página.
+let statsAnimated = false;
+function animateProfileStats() {
+  if (statsAnimated) return;
+  statsAnimated = true;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const els = [...document.querySelectorAll(".p-stats [data-count]")];
+  const t0 = performance.now(), dur = 1100;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    els.forEach((el) => { if (el.isConnected) el.textContent = num(Math.round(Number(el.dataset.count) * e)); });
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 function profileHeader(tab) {
   const c = creator();
   const s = state.stats;
@@ -1252,6 +1283,11 @@ function profileHeader(tab) {
       </div>
       <h1 class="p-name">${esc(c.name)} ${VERIFIED}</h1>
       <div class="p-handle"><span>${esc(CONFIG.handle)}</span><span>·</span><span>${tr("Activa recientemente")}</span></div>
+      <ul class="p-stats" aria-label="${tr("Estadísticas del perfil")}">
+        <li><b data-count="${s.posts}">${num(s.posts)}</b><span>${tr("Publicaciones")}</span></li>
+        <li class="p-stat-subs"><b data-count="${s.subscribers ?? 200}">${num(s.subscribers ?? 200)}</b><span><i class="live" aria-hidden="true"></i>${tr("Suscriptores")}</span></li>
+        <li><b data-count="${s.likes}">${num(s.likes)}</b><span>${tr("Me gusta")}</span></li>
+      </ul>
       <p class="p-bio clamp" id="bio">${esc(c.bio)}</p>
       <button class="more-link hidden" id="bio-more">${tr("Ver más")}</button>
       <div style="height:1.1rem"></div>
@@ -1384,6 +1420,8 @@ async function viewProfile(tab, alive) {
     feed.className = "";
     feed.innerHTML = `<div class="empty">${ic("image")}<p class="bold" style="color:var(--text)">${tr("Aún no hay publicaciones")}</p><p class="small">${tr("Vuelve pronto, ¡hay contenido nuevo cada semana!")}</p></div>`;
   }
+
+  animateProfileStats();
 
   // Biografía expandible
   const bio = $("#bio"), bioMore = $("#bio-more");
